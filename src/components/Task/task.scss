@@ -1,0 +1,44 @@
+@use '../../styles/variables' as *;
+
+.task-card {
+  margin-bottom: $spacing-md;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .task-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .task-dates {
+    margin: $spacing-sm 0;
+    font-size: 12px;
+  }
+
+  .task-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: $spacing-md;
+  }
+
+  &.priority-0 {
+    border-left: 3px solid $error-color;
+  }
+
+  &.priority-1 {
+    border-left: 3px solid $warning-color;
+  }
+
+  &.priority-2 {
+    border-left: 3px solid $primary-color;
+  }
+
+  &.priority-3 {
+    border-left: 3px solid $success-color;
+  }
+} 

@@ -1,0 +1,13 @@
+@use '../../styles/variables' as *;
+
+.add-task-button {
+  margin-bottom: $spacing-md;
+}
+
+.task-form-modal {
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0;
+  }
+} 

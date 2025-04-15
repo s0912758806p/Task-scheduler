@@ -1,0 +1,28 @@
+@use '../../styles/variables' as *;
+
+.task-board-container {
+  background-color: $background-color;
+  padding: $spacing-lg;
+  min-height: calc(100vh - 64px);
+  
+  .task-board-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-md;
+    
+    h2 {
+      margin: 0;
+    }
+  }
+  
+  .task-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: $spacing-lg;
+    
+    @media (max-width: $screen-md) {
+      grid-template-columns: 1fr;
+    }
+  }
+} 
