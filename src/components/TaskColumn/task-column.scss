@@ -1,40 +1,111 @@
-@use '../../styles/variables' as *;
+@use "../../styles/variables" as *;
 
 .task-column {
-  background-color: #fff;
+  width: 100%;
+  min-height: 500px;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: $spacing-md;
-  
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+
+  &:nth-child(1) {
+    background-color: rgba(217, 217, 217, 0.1);
+    border-top: 4px solid #d9d9d9;
+  }
+
+  &:nth-child(2) {
+    background-color: rgba(24, 144, 255, 0.05);
+    border-top: 4px solid #1890ff;
+  }
+
+  &:nth-child(3) {
+    background-color: rgba(82, 196, 26, 0.05);
+    border-top: 4px solid #52c41a;
+  }
+
   .column-header {
-    border-bottom: 1px solid $border-color;
-    margin-bottom: $spacing-md;
-    padding-bottom: $spacing-sm;
-    
-    h4 {
+    padding: 16px;
+    border-bottom: 1px solid #e8e8e8;
+    background-color: rgba(255, 255, 255, 0.7);
+
+    .ant-typography {
+      margin-bottom: 0;
+      font-size: 18px;
+    }
+
+    .badge {
+      margin-right: 8px;
+    }
+
+    .task-count {
+      font-size: 14px;
+      font-weight: normal;
+      color: rgba(0, 0, 0, 0.45);
+      margin-left: 8px;
+    }
+  }
+
+  .task-list {
+    padding: 16px;
+    min-height: 400px;
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+    transition: background-color 0.2s ease;
+
+    // 當列表正在作為拖入目標時的樣式
+    &.dragging-over {
+      background-color: rgba(24, 144, 255, 0.1);
+    }
+
+    .empty-card {
+      color: #999;
+      text-align: center;
+      border-style: dashed;
+      margin-bottom: 0;
+      height: 100px;
       display: flex;
       align-items: center;
-      gap: $spacing-xs;
-      margin: 0;
-      
-      .task-count {
-        font-size: 14px;
-        font-weight: normal;
-        color: $text-light;
-        margin-left: $spacing-xs;
+      justify-content: center;
+    }
+
+    .ant-card {
+      margin-bottom: 12px;
+
+      &:last-child {
+        margin-bottom: 0;
       }
     }
   }
-  
-  .task-list {
-    min-height: 200px;
-    
-    .empty-card {
-      border: 1px dashed $border-color;
-      background-color: #fafafa;
-      color: $text-light;
-      text-align: center;
-      padding: $spacing-md;
+}
+
+// 深色主題下的樣式
+.dark-theme {
+  .task-column {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+
+    &:nth-child(1) {
+      background-color: rgba(60, 60, 60, 0.3);
+      border-top: 4px solid rgb(217, 217, 217);
+    }
+
+    &:nth-child(2) {
+      background-color: rgba(60, 60, 60, 0.3);
+      border-top: 4px solid rgb(24, 144, 255);
+    }
+
+    &:nth-child(3) {
+      background-color: rgba(60, 60, 60, 0.3);
+      border-top: 4px solid rgb(82, 196, 26);
+    }
+
+    .column-header {
+      background-color: rgba(31, 31, 31, 0.7);
+      border-bottom: 1px solid $dark-border-color;
+    }
+
+    .task-list {
+      &.dragging-over {
+        background-color: rgba(250, 140, 22, 0.2);
+      }
     }
   }
-} 
+}

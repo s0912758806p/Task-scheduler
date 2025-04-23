@@ -1,28 +1,143 @@
-@use '../../styles/variables' as *;
+@use "../../styles/variables" as *;
 
 .task-board-container {
   background-color: $background-color;
-  padding: $spacing-lg;
+  padding: 24px;
   min-height: calc(100vh - 64px);
-  
+
   .task-board-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: $spacing-md;
-    
+    margin-bottom: 24px;
+
     h2 {
       margin: 0;
     }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      @media (max-width: 768px) {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+    }
   }
-  
+
+  .task-board-filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+
+    @media (max-width: 576px) {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .ant-input-search {
+        width: 100% !important;
+      }
+    }
+  }
+
+  .task-filter-options {
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      margin-right: 24px;
+
+      .filter-label {
+        margin-right: 8px;
+        color: rgba(0, 0, 0, 0.65);
+      }
+    }
+  }
+
   .task-board {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: $spacing-lg;
-    
-    @media (max-width: $screen-md) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+
+    @media (max-width: 1024px) {
       grid-template-columns: 1fr;
     }
   }
-} 
+}
+
+// Dark Theme Styles
+.dark-theme {
+  .task-board-container {
+    background-color: $dark-background-color;
+
+    .task-board-header {
+      h2 {
+        color: $dark-text-color;
+      }
+    }
+
+    .task-board-filters {
+      .ant-btn {
+        border-color: $dark-border-color;
+
+        &:not(.ant-btn-primary) {
+          color: $dark-text-color;
+          background-color: $dark-component-background;
+
+          &:hover {
+            color: $dark-primary-color;
+            border-color: $dark-primary-color;
+          }
+        }
+      }
+
+      .ant-input-search {
+        .ant-input {
+          background-color: $dark-component-background;
+          border-color: $dark-border-color;
+          color: $dark-text-color;
+
+          &::placeholder {
+            color: $dark-text-light;
+          }
+        }
+
+        .ant-input-group-addon {
+          background-color: $dark-component-background;
+          border-color: $dark-border-color;
+
+          .ant-btn {
+            background-color: $dark-component-background;
+            border-color: $dark-border-color;
+
+            &:hover {
+              color: $dark-primary-color;
+              border-color: $dark-primary-color;
+            }
+          }
+        }
+      }
+    }
+
+    .task-filter-options {
+      background-color: $dark-component-background;
+      border: 1px solid $dark-border-color;
+
+      .filter-group {
+        .filter-label {
+          color: $dark-text-light;
+        }
+      }
+    }
+  }
+}

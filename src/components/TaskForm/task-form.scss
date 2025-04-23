@@ -1,8 +1,4 @@
-@use '../../styles/variables' as *;
-
-.add-task-button {
-  margin-bottom: $spacing-md;
-}
+@use "../../styles/variables" as *;
 
 .task-form-modal {
   .form-actions {
@@ -10,4 +6,72 @@
     justify-content: flex-end;
     margin-bottom: 0;
   }
-} 
+}
+
+// Dark Theme Styles
+.dark-theme {
+  .task-form-modal {
+    .ant-modal-content {
+      background-color: $dark-component-background;
+
+      .ant-modal-header {
+        background-color: $dark-component-background;
+        border-bottom: 1px solid $dark-border-color;
+
+        .ant-modal-title {
+          color: $dark-text-color;
+        }
+      }
+
+      .ant-modal-body {
+        .ant-form-item-label > label {
+          color: $dark-text-color;
+        }
+
+        .ant-input,
+        .ant-select-selector,
+        .ant-picker {
+          background-color: $dark-component-background;
+          border-color: $dark-border-color;
+          color: $dark-text-color;
+
+          &::placeholder {
+            color: $dark-text-light;
+          }
+        }
+
+        .ant-picker-panel-container {
+          background-color: $dark-component-background;
+        }
+
+        .ant-select-dropdown {
+          background-color: $dark-component-background;
+
+          .ant-select-item {
+            color: $dark-text-color;
+
+            &-option-selected,
+            &-option-active {
+              background-color: rgba(255, 255, 255, 0.08);
+            }
+          }
+        }
+      }
+
+      .ant-modal-footer {
+        border-top: 1px solid $dark-border-color;
+
+        .ant-btn:not(.ant-btn-primary) {
+          background-color: $dark-component-background;
+          border-color: $dark-border-color;
+          color: $dark-text-color;
+        }
+
+        .ant-btn-primary {
+          background-color: $dark-primary-color;
+          border-color: $dark-primary-color;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,104 @@
+@use "../../styles/variables" as *;
+@use "sass:color";
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+
+  .theme-label {
+    font-size: 14px;
+    font-weight: 500;
+    margin-right: 8px;
+    color: #fff;
+    transition: color 0.3s ease;
+  }
+
+  .ant-switch {
+    margin-left: 8px;
+    background-color: rgba(24, 144, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+
+    // 日間模式下的太陽圖示樣式
+    .anticon-sun {
+      color: #fff;
+      font-size: 14px;
+    }
+
+    // 夜間模式下的月亮圖示樣式
+    .anticon-moon {
+      color: $primary-color;
+      font-size: 14px;
+    }
+
+    // 增加日間模式下的開關手柄樣式
+    .ant-switch-handle::before {
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    // 選中狀態
+    &.ant-switch-checked {
+      background-color: rgba(250, 140, 22, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+
+      .ant-switch-handle::before {
+        background-color: #fff;
+      }
+    }
+
+    // 懸停效果
+    &:hover:not(.ant-switch-disabled) {
+      background-color: rgba(24, 144, 255, 0.25);
+
+      &.ant-switch-checked {
+        background-color: rgba(250, 140, 22, 0.3);
+      }
+    }
+  }
+}
+
+// Dark Theme Styles for the toggle
+.dark-theme {
+  .theme-toggle {
+    .theme-label {
+      color: $dark-text-color;
+    }
+
+    .ant-switch {
+      background-color: rgba(250, 140, 22, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+
+      // 日間模式下的太陽圖示樣式 (在深色主題中)
+      .anticon-sun {
+        color: $dark-primary-color;
+      }
+
+      // 夜間模式下的月亮圖示樣式 (在深色主題中)
+      .anticon-moon {
+        color: #fff;
+      }
+
+      &.ant-switch-checked {
+        background-color: rgba(250, 140, 22, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .ant-switch-handle::before {
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      // 懸停效果 (在深色主題中)
+      &:hover:not(.ant-switch-disabled) {
+        background-color: rgba(250, 140, 22, 0.2);
+
+        &.ant-switch-checked {
+          background-color: rgba(250, 140, 22, 0.4);
+        }
+      }
+    }
+  }
+}

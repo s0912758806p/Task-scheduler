@@ -1,58 +1,74 @@
-@use 'variables' as *;
+@use "./variables" as *;
 
 .app-container {
   min-height: 100vh;
   background-color: $background-color;
+}
 
-  .app-header {
+.app-header {
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  background-color: $primary-color;
+
+  .header-content {
+    width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: $spacing-md;
-    background-color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  h1 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.5rem;
+  }
+}
+
+.app-content {
+  padding: 0;
+}
+
+/* Dark Theme Styles */
+.dark-theme {
+  .app-header {
+    background-color: #333;
+    border-bottom: 1px solid #555;
 
     h1 {
+      color: #fff;
+    }
+  }
+}
+
+.task-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: $spacing-lg;
+  margin-top: $spacing-lg;
+}
+
+.task-column {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: $spacing-md;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  .column-header {
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-md;
+    border-bottom: 1px solid $border-color;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
       margin: 0;
-      color: $primary-color;
     }
   }
 
-  .app-content {
-    padding: $spacing-lg;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .task-board {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: $spacing-lg;
-    margin-top: $spacing-lg;
-  }
-
-  .task-column {
-    background-color: #fff;
-    border-radius: 8px;
-    padding: $spacing-md;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
-    .column-header {
-      margin-bottom: $spacing-md;
-      padding-bottom: $spacing-md;
-      border-bottom: 1px solid $border-color;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-
-      h3 {
-        margin: 0;
-      }
-    }
-
-    .task-list {
-      min-height: 200px;
-    }
+  .task-list {
+    min-height: 200px;
   }
 }
 
@@ -73,4 +89,4 @@
   &-3 {
     border-left: 3px solid $success-color;
   }
-} 
+}
