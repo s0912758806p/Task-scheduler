@@ -1,0 +1,54 @@
+name: Dev to Release Auto PR & Merge
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  create-and-merge-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Create Pull Request
+        id: open-pr
+        uses: repo-sync/pull-request@v2
+        with:
+          destination_branch: "release"
+          pr_title: "chore: Merge dev to release [automated]"
+          pr_body: |
+            ## Automated merge from dev to release
+
+            This pull request was automatically created to merge changes from the dev branch to the release branch.
+
+            Triggered by push to dev by: ${{ github.actor }}
+
+            [View commit details](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          pr_assignee: "${{ github.actor }}"
+          pr_label: "auto-merge, automated"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable Pull Request Auto-merge
+        if: steps.open-pr.outputs.pr_number
+        uses: peter-evans/enable-pull-request-automerge@v2
+        with:
+          pull-request-number: ${{ steps.open-pr.outputs.pr_number }}
+          merge-method: merge
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-approve Pull Request
+        if: steps.open-pr.outputs.pr_number
+        uses: hmarr/auto-approve-action@v3
+        with:
+          pull-request-number: ${{ steps.open-pr.outputs.pr_number }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output PR URL
+        if: steps.open-pr.outputs.pr_url
+        run: echo "Created and Auto-merged PR - ${{ steps.open-pr.outputs.pr_url }}"
