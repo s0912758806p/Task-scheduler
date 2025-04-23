@@ -1,0 +1,59 @@
+name: Auto Pull Request
+on:
+  push:
+    branches-ignore:
+      - dev
+      - main
+      - release
+
+# 新增全局權限設置
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-pull-request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Create Pull Request
+        id: open-pr
+        uses: repo-sync/pull-request@v2
+        with:
+          destination_branch: "dev"
+          pr_title: "feat: ${{ github.ref_name }} auto PR"
+          pr_body: |
+            ## Automatic Pull Request from ${{ github.ref_name }}
+
+            This pull request was automatically created by the GitHub Action workflow.
+
+            Branch: ${{ github.ref_name }}
+            Triggered by: ${{ github.actor }}
+
+            ### Changes:
+
+            ${{ github.event.commits[0].message }}
+
+            [View commit details](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          pr_template: ""
+          pr_assignee: "${{ github.actor }}"
+          pr_label: "auto-pr, needs-review"
+          pr_draft: false
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Pull Request Output
+        if: steps.open-pr.outputs.pr_url
+        run: |
+          echo "Pull Request URL - ${{ steps.open-pr.outputs.pr_url }}"
+          echo "Pull Request Number - ${{ steps.open-pr.outputs.pr_number }}"
+
+      - name: Auto-Approve Pull Request (For Collaborators)
+        if: steps.open-pr.outputs.pr_number && contains(github.repository_owner, github.actor)
+        uses: hmarr/auto-approve-action@v3
+        with:
+          pull-request-number: ${{ steps.open-pr.outputs.pr_number }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
