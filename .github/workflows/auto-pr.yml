@@ -1,0 +1,48 @@
+name: Auto Pull Request
+on:
+  push:
+    branches-ignore:
+      - dev
+      - main
+      - release
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-pull-request:
+    if: github.actor != 'Gr925-auto-bot-project'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Create Pull Request
+        id: open-pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.BOT_PAT_TOKEN }}
+          commit-message: "chore: auto PR from ${{ github.ref_name }}"
+          branch: ${{ github.ref_name }}
+          base: dev
+          title: "feat: ${{ github.ref_name }} auto PR"
+          body: |
+            ## Automatic Pull Request from ${{ github.ref_name }}
+
+            Triggered by: ${{ github.actor }}
+
+            [View commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+
+      - name: Print PR Info
+        run: |
+          echo "PR URL: ${{ steps.open-pr.outputs.pull-request-url }}"
+          echo "PR Number: ${{ steps.open-pr.outputs.pull-request-number }}"
+
+      - name: Auto-Approve Pull Request
+        if: steps.open-pr.outputs.pull-request-number
+        uses: hmarr/auto-approve-action@v3
+        with:
+          github-token: ${{ secrets.BOT_PAT_TOKEN }}
