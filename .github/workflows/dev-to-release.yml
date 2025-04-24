@@ -10,20 +10,62 @@ permissions:
 
 jobs:
   create-and-merge-pr:
+    # 確保不會與機器人的自動 PR 步驟衝突
+    if: ${{ !contains(github.event.head_commit.message, '[skip-release]') }}
     runs-on: ubuntu-latest
     steps:
+      # 添加調試步驟
+      - name: Debug Information
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Commit Message: ${{ github.event.head_commit.message }}"
+          echo "Repository: ${{ github.repository }}"
+
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
+      # 獲取最後提交者信息
+      - name: Get Last Committer
+        id: last-commit
+        run: |
+          LAST_COMMITTER_NAME=$(git log -1 --pretty=format:'%an')
+          LAST_COMMITTER_EMAIL=$(git log -1 --pretty=format:'%ae')
+          echo "name=$LAST_COMMITTER_NAME" >> $GITHUB_OUTPUT
+          echo "email=$LAST_COMMITTER_EMAIL" >> $GITHUB_OUTPUT
+
+      # 設置 Git 配置以使用原始提交者信息
+      - name: Configure Git
+        run: |
+          git config --global user.name "${{ steps.last-commit.outputs.name }}"
+          git config --global user.email "${{ steps.last-commit.outputs.email }}"
+
+      # 檢查是否已有 PR
+      - name: Check if PR exists
+        id: check-pr
+        run: |
+          PR_EXISTS=$(gh pr list --repo ${{ github.repository }} --head dev --base release --json number --jq 'length')
+          if [ "$PR_EXISTS" -gt "0" ]; then
+            echo "pr_exists=true" >> $GITHUB_OUTPUT
+            echo "PR already exists, skipping creation"
+          else
+            echo "pr_exists=false" >> $GITHUB_OUTPUT
+            echo "No PR exists, will create one"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_PAT_TOKEN }}
+
       - name: Create Pull Request (dev → release)
         id: cpr
+        if: steps.check-pr.outputs.pr_exists == 'false'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.BOT_PAT_TOKEN }}
-          commit-message: "chore: sync dev to release"
-          branch: dev
+          commit-message: "chore: sync dev to release [skip-release]"
+          branch: bot-auto-pr/dev-to-release
           base: release
           title: "chore: Merge dev to release [automated]"
           body: |
@@ -34,6 +76,9 @@ jobs:
             [View commit details](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
           labels: auto-merge, automated
           draft: false
+          committer: ${{ steps.last-commit.outputs.name }} <${{ steps.last-commit.outputs.email }}>
+          author: ${{ steps.last-commit.outputs.name }} <${{ steps.last-commit.outputs.email }}>
+          signoff: true
 
       - name: Enable Auto-merge
         if: steps.cpr.outputs.pull-request-url
