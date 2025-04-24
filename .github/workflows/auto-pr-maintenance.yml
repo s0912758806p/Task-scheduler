@@ -1,0 +1,25 @@
+name: Auto PR Maintenance
+on:
+  pull_request:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  auto-maintain:
+    if: contains(github.actor, 'Gr925-auto-bot-project')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-Approve Pull Request
+        uses: hmarr/auto-approve-action@v3
+        with:
+          github-token: ${{ secrets.BOT_PAT_TOKEN }}
+
+      - name: Enable Auto Merge
+        uses: peter-evans/enable-pull-request-automerge@v2
+        with:
+          token: ${{ secrets.BOT_PAT_TOKEN }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: merge
