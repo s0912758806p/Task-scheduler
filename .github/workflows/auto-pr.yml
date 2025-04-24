@@ -6,6 +6,7 @@ on:
       - main
       - release
 
+# 新增全局權限設置
 permissions:
   contents: write
   pull-requests: write
