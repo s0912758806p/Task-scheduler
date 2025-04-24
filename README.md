@@ -2,7 +2,9 @@
 
 A modern web-based task scheduling application that helps you manage daily tasks, set deadlines, and improve productivity. Supports both light and dark themes with rich task management features.
 
-![Task Scheduler Screenshot](screenshot.png)
+![Task Scheduler Screenshot](./src/assets/Screenshot-task-scheduler.png)
+
+[DEMO](https://task-scheduler-rouge-gr925.vercel.app/)
 
 ## Features
 
