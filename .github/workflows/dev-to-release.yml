@@ -4,6 +4,10 @@ on:
     branches:
       - dev
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   create-and-merge-pr:
     runs-on: ubuntu-latest
@@ -13,39 +17,39 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create Pull Request
-        id: open-pr
-        uses: repo-sync/pull-request@v2
+      - name: Create Pull Request (dev → release)
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
         with:
-          destination_branch: "release"
-          pr_title: "chore: Merge dev to release [automated]"
-          pr_body: |
+          token: ${{ secrets.BOT_PAT_TOKEN }}
+          commit-message: "chore: sync dev to release"
+          branch: dev
+          base: release
+          title: "chore: Merge dev to release [automated]"
+          body: |
             ## Automated merge from dev to release
-
-            This pull request was automatically created to merge changes from the dev branch to the release branch.
 
             Triggered by push to dev by: ${{ github.actor }}
 
             [View commit details](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-          pr_assignee: "${{ github.actor }}"
-          pr_label: "auto-merge, automated"
-          github_token: ${{ secrets.BOT_PAT_TOKEN }}
+          labels: auto-merge, automated
+          draft: false
 
-      - name: Enable Pull Request Auto-merge
-        if: steps.open-pr.outputs.pr_number
+      - name: Enable Auto-merge
+        if: steps.cpr.outputs.pull-request-url
         uses: peter-evans/enable-pull-request-automerge@v2
         with:
-          pull-request-number: ${{ steps.open-pr.outputs.pr_number }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           merge-method: merge
           token: ${{ secrets.BOT_PAT_TOKEN }}
 
-      - name: Auto-approve Pull Request
-        if: steps.open-pr.outputs.pr_number
+      - name: Auto-approve PR
+        if: steps.cpr.outputs.pull-request-url
         uses: hmarr/auto-approve-action@v3
         with:
-          pull-request-number: ${{ steps.open-pr.outputs.pr_number }}
           github-token: ${{ secrets.BOT_PAT_TOKEN }}
 
-      - name: Output PR URL
-        if: steps.open-pr.outputs.pr_url
-        run: echo "Created and Auto-merged PR - ${{ steps.open-pr.outputs.pr_url }}"
+      - name: Output PR Info
+        if: steps.cpr.outputs.pull-request-url
+        run: |
+          echo "✅ Auto PR created: ${{ steps.cpr.outputs.pull-request-url }}"

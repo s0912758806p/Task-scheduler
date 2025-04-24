@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   auto-pull-request:
+    if: github.actor != 'Gr925-auto-bot-project'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -22,37 +23,27 @@ jobs:
 
       - name: Create Pull Request
         id: open-pr
-        uses: repo-sync/pull-request@v2
+        uses: peter-evans/create-pull-request@v6
         with:
-          destination_branch: "dev"
-          pr_title: "feat: ${{ github.ref_name }} auto PR"
-          pr_body: |
+          token: ${{ secrets.BOT_PAT_TOKEN }}
+          commit-message: "chore: auto PR from ${{ github.ref_name }}"
+          branch: ${{ github.ref_name }}
+          base: dev
+          title: "feat: ${{ github.ref_name }} auto PR"
+          body: |
             ## Automatic Pull Request from ${{ github.ref_name }}
 
-            This pull request was automatically created by the GitHub Action workflow.
-
-            Branch: ${{ github.ref_name }}
             Triggered by: ${{ github.actor }}
 
-            ### Changes:
+            [View commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
 
-            ${{ github.event.commits[0].message }}
-
-            [View commit details](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-          pr_template: ""
-          pr_assignee: "${{ github.actor }}"
-          pr_draft: false
-          github_token: ${{ secrets.BOT_PAT_TOKEN }}
-
-      - name: Check Pull Request Output
-        if: steps.open-pr.outputs.pr_url
+      - name: Print PR Info
         run: |
-          echo "Pull Request URL - ${{ steps.open-pr.outputs.pr_url }}"
-          echo "Pull Request Number - ${{ steps.open-pr.outputs.pr_number }}"
+          echo "PR URL: ${{ steps.open-pr.outputs.pull-request-url }}"
+          echo "PR Number: ${{ steps.open-pr.outputs.pull-request-number }}"
 
-      - name: Auto-Approve Pull Request (For Collaborators)
-        if: steps.open-pr.outputs.pr_number && contains(github.repository_owner, github.actor)
+      - name: Auto-Approve Pull Request
+        if: steps.open-pr.outputs.pull-request-number
         uses: hmarr/auto-approve-action@v3
         with:
-          pull-request-number: ${{ steps.open-pr.outputs.pr_number }}
           github-token: ${{ secrets.BOT_PAT_TOKEN }}
