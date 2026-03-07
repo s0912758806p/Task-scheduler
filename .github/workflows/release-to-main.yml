@@ -1,0 +1,93 @@
+name: Release to Main Auto PR & Merge
+on:
+  push:
+    branches:
+      - release
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-and-merge-pr:
+    if: ${{ !contains(github.event.head_commit.message, '[skip-main]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug Information
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Commit Message: ${{ github.event.head_commit.message }}"
+          echo "Repository: ${{ github.repository }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get Last Committer
+        id: last-commit
+        run: |
+          echo "name=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
+          echo "email=$(git log -1 --pretty=format:'%ae')" >> $GITHUB_OUTPUT
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "${{ steps.last-commit.outputs.name }}"
+          git config --global user.email "${{ steps.last-commit.outputs.email }}"
+
+      - name: Check if PR exists
+        id: check-pr
+        run: |
+          PR_EXISTS=$(gh pr list --repo ${{ github.repository }} --head release --base main --json number --jq 'length')
+          if [ "$PR_EXISTS" -gt "0" ]; then
+            echo "pr_exists=true" >> $GITHUB_OUTPUT
+            echo "PR already exists, skipping creation"
+          else
+            echo "pr_exists=false" >> $GITHUB_OUTPUT
+            echo "No PR exists, will create one"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_PAT_TOKEN }}
+
+      - name: Create Pull Request (release → main)
+        id: cpr
+        if: steps.check-pr.outputs.pr_exists == 'false'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.BOT_PAT_TOKEN }}
+          commit-message: "chore: sync release to main [skip-main]"
+          branch: bot-auto-pr/release-to-main
+          base: main
+          title: "chore: Merge release to main [automated]"
+          body: |
+            ## Automated merge from release to main
+
+            Triggered by push to release by: ${{ github.actor }}
+
+            [View commit details](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          labels: auto-merge, automated
+          draft: false
+          committer: ${{ steps.last-commit.outputs.name }} <${{ steps.last-commit.outputs.email }}>
+          author: ${{ steps.last-commit.outputs.name }} <${{ steps.last-commit.outputs.email }}>
+          signoff: true
+
+      - name: Enable Auto-merge
+        if: steps.cpr.outputs.pull-request-url
+        uses: peter-evans/enable-pull-request-automerge@v2
+        with:
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: merge
+          token: ${{ secrets.BOT_PAT_TOKEN }}
+
+      - name: Auto-approve PR
+        if: steps.cpr.outputs.pull-request-url
+        uses: hmarr/auto-approve-action@v3
+        with:
+          github-token: ${{ secrets.BOT_PAT_TOKEN }}
+
+      - name: Output PR Info
+        if: steps.cpr.outputs.pull-request-url
+        run: |
+          echo "✅ Auto PR created: ${{ steps.cpr.outputs.pull-request-url }}"
