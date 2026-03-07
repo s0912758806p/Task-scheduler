@@ -7,6 +7,7 @@ import {
   WarningOutlined,
 } from "@ant-design/icons";
 import { TaskData } from "../../types/task";
+import { useAppSelector } from "../../hooks/redux";
 import "./stats-panel.scss";
 
 const { Text } = Typography;
@@ -16,6 +17,18 @@ interface StatsPanelProps {
 }
 
 const StatsPanel: React.FC<StatsPanelProps> = ({ tasks }) => {
+  const { mode } = useAppSelector((state) => state.theme);
+  const isDark = mode === "dark";
+
+  const colors = {
+    todo:     isDark ? "#94a3b8" : "#94a3b8",
+    progress: isDark ? "#60a5fa" : "#2563eb",
+    done:     isDark ? "#4ade80" : "#16a34a",
+    error:    isDark ? "#f87171" : "#dc2626",
+    ok:       isDark ? "#4ade80" : "#16a34a",
+    trail:    isDark ? "rgba(255,255,255,0.06)" : "#f1f5f9",
+  };
+
   const total = tasks.length;
   const todo = tasks.filter((t) => t.status === "todo").length;
   const inProgress = tasks.filter((t) => t.status === "in-progress").length;
@@ -34,7 +47,7 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ tasks }) => {
             <Statistic
               title="待處理"
               value={todo}
-              prefix={<ClockCircleOutlined style={{ color: "#94a3b8" }} />}
+              prefix={<ClockCircleOutlined style={{ color: colors.todo }} />}
             />
           </Card>
         </Col>
@@ -43,8 +56,8 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ tasks }) => {
             <Statistic
               title="進行中"
               value={inProgress}
-              prefix={<FireOutlined style={{ color: "#2563eb" }} />}
-              valueStyle={{ color: "#2563eb" }}
+              prefix={<FireOutlined style={{ color: colors.progress }} />}
+              valueStyle={{ color: colors.progress }}
             />
           </Card>
         </Col>
@@ -53,8 +66,8 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ tasks }) => {
             <Statistic
               title="已完成"
               value={done}
-              prefix={<CheckCircleOutlined style={{ color: "#16a34a" }} />}
-              valueStyle={{ color: "#16a34a" }}
+              prefix={<CheckCircleOutlined style={{ color: colors.done }} />}
+              valueStyle={{ color: colors.done }}
             />
           </Card>
         </Col>
@@ -63,8 +76,8 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ tasks }) => {
             <Statistic
               title="逾期未完成"
               value={overdue}
-              prefix={<WarningOutlined style={{ color: overdue > 0 ? "#dc2626" : "#16a34a" }} />}
-              valueStyle={{ color: overdue > 0 ? "#dc2626" : "#16a34a" }}
+              prefix={<WarningOutlined style={{ color: overdue > 0 ? colors.error : colors.ok }} />}
+              valueStyle={{ color: overdue > 0 ? colors.error : colors.ok }}
             />
           </Card>
         </Col>
@@ -82,8 +95,8 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ tasks }) => {
           </div>
           <Progress
             percent={completionRate}
-            strokeColor="#16a34a"
-            trailColor="#f1f5f9"
+            strokeColor={colors.done}
+            trailColor={colors.trail}
             showInfo={false}
             size="small"
           />

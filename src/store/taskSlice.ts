@@ -6,7 +6,7 @@ const MAX_HISTORY = 30;
 
 const loadTasksFromLocalStorage = (): TaskData[] => {
   try {
-    const savedTasks = localStorage.getItem("taskSchedulerTasks_v2");
+    const savedTasks = localStorage.getItem("taskSchedulerTasks_v3");
     if (savedTasks) {
       const tasks = JSON.parse(savedTasks) as TaskData[];
       // 資料遷移：舊任務沒有 boardId，補上預設值
@@ -27,8 +27,8 @@ const mockTasks: TaskData[] = [
     description: "與客戶開會確認功能範圍，整理 PRD 文件並取得所有利益相關人簽核。",
     status: "todo",
     priority: 0,
-    createdAt: Date.now() - 86400000 * 2,
-    dueDate: Date.now() + 86400000 * 2,
+    createdAt: Date.now() - 86400000 * 5,
+    dueDate: Date.now() - 86400000 * 1,
     tags: ["文件", "客戶"],
   },
   {
@@ -110,8 +110,8 @@ const mockTasks: TaskData[] = [
     description: "使用 JWT + Refresh Token 機制，支援第三方 OAuth（Google、GitHub）登入。",
     status: "in-progress",
     priority: 0,
-    createdAt: Date.now() - 86400000 * 5,
-    dueDate: Date.now() + 86400000 * 1,
+    createdAt: Date.now() - 86400000 * 8,
+    dueDate: Date.now() - 86400000 * 2,
     tags: ["後端", "安全"],
     subtasks: [
       { id: "s10", title: "實作 JWT 簽發與驗證", done: true },
@@ -199,7 +199,7 @@ const snapshot = (state: TaskState) => {
 };
 
 const persist = (state: TaskState) => {
-  localStorage.setItem("taskSchedulerTasks_v2", JSON.stringify(state.tasks));
+  localStorage.setItem("taskSchedulerTasks_v3", JSON.stringify(state.tasks));
 };
 
 export const taskSlice = createSlice({
