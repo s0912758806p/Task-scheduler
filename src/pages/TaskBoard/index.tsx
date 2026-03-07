@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Typography,
   Divider,
@@ -9,6 +9,7 @@ import {
   message,
   Modal,
 } from "antd";
+import type { InputRef } from "antd";
 import {
   SearchOutlined,
   FilterOutlined,
@@ -16,13 +17,20 @@ import {
   DownloadOutlined,
   UploadOutlined,
   ExclamationCircleOutlined,
+  UndoOutlined,
+  RedoOutlined,
+  CheckSquareOutlined,
+  CloseSquareOutlined,
+  BarChartOutlined,
 } from "@ant-design/icons";
 import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 import type { RcFile } from "antd/es/upload";
 import TaskColumn from "../../components/TaskColumn";
-import TaskForm from "../../components/TaskForm";
+import TaskForm, { TaskFormHandle } from "../../components/TaskForm";
+import StatsPanel from "../../components/StatsPanel";
+import { useNotifications } from "../../hooks/useNotifications";
 import { useAppSelector, useAppDispatch } from "../../hooks/redux";
-import { updateTaskStatus, importTasks } from "../../store/taskSlice";
+import { updateTaskStatus, importTasks, reorderTask, undo, redo, batchDeleteTasks, batchUpdateStatus } from "../../store/taskSlice";
 import { TaskStatus, TaskData } from "../../types/task";
 import "./task-board.scss";
 
@@ -35,10 +43,17 @@ interface FilterOptions {
   priority: number | null;
   searchText: string;
   dueDate: "all" | "overdue" | "today" | "week" | "future";
+  tags: string[];
 }
 
 const TaskBoard: React.FC = () => {
-  const { tasks } = useAppSelector((state) => state.tasks);
+  const { tasks: allTasks, past, future } = useAppSelector((state) => state.tasks);
+  const { activeBoardId } = useAppSelector((state) => state.board);
+  const tasks = allTasks.filter((t) => t.boardId === activeBoardId);
+  const canUndo = past.length > 0;
+  const canRedo = future.length > 0;
+
+  useNotifications(tasks);
   const dispatch = useAppDispatch();
 
   // 篩選設置狀態
@@ -46,31 +61,128 @@ const TaskBoard: React.FC = () => {
     priority: null,
     searchText: "",
     dueDate: "all",
+    tags: [],
   });
 
   // 是否顯示篩選選項
   const [showFilters, setShowFilters] = useState(false);
 
+  // 排序方式
+  const [sortBy, setSortBy] = useState<"default" | "priority" | "dueDate">("default");
+
   // 用於隱藏實際檔案上傳的 input
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 鍵盤快捷鍵用的 refs
+  const addTaskRef = useRef<TaskFormHandle>(null);
+  const searchRef = useRef<InputRef>(null);
+
+  // 統計面板
+  const [showStats, setShowStats] = useState(true);
+
+  // 批次操作狀態
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    const allVisibleIds = filteredAndSortedTasks.map((t) => t.id);
+    setSelectedIds(
+      selectedIds.length === allVisibleIds.length ? [] : allVisibleIds
+    );
+  };
+
+  const handleExitBatch = () => {
+    setBatchMode(false);
+    setSelectedIds([]);
+  };
+
+  const handleBatchDelete = () => {
+    confirm({
+      title: `確定要刪除 ${selectedIds.length} 筆任務嗎？`,
+      icon: <ExclamationCircleOutlined />,
+      content: "此操作不可撤銷（可用 Ctrl+Z 復原）。",
+      okText: "刪除",
+      okType: "danger",
+      cancelText: "取消",
+      onOk() {
+        dispatch(batchDeleteTasks(selectedIds));
+        handleExitBatch();
+      },
+    });
+  };
+
+  const handleBatchMove = (status: TaskStatus) => {
+    dispatch(batchUpdateStatus({ ids: selectedIds, status }));
+    handleExitBatch();
+  };
+
+  // 所有任務的唯一標籤
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    tasks.forEach((task) => task.tags?.forEach((tag) => tagSet.add(tag)));
+    return Array.from(tagSet);
+  }, [tasks]);
+
+  // 鍵盤快捷鍵
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) return;
+
+      if (e.key === "n" || e.key === "N") {
+        addTaskRef.current?.open();
+      }
+      if (e.key === "/") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+
+      const isMod = e.ctrlKey || e.metaKey;
+      if (isMod && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        dispatch(undo());
+      }
+      if (isMod && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+        e.preventDefault();
+        dispatch(redo());
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
-    // 如果沒有目的地或目的地與來源相同，則不做任何操作
+    if (!destination) return;
     if (
-      !destination ||
-      (destination.droppableId === source.droppableId &&
-        destination.index === source.index)
-    ) {
-      return;
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) return;
+
+    if (destination.droppableId === source.droppableId) {
+      // 同欄重排
+      const status = source.droppableId as TaskStatus;
+      const columnTasks = filteredAndSortedTasks.filter((t) => t.status === status);
+      const ids = columnTasks.map((t) => t.id);
+      const [moved] = ids.splice(source.index, 1);
+      ids.splice(destination.index, 0, moved);
+      dispatch(reorderTask({ status, orderedIds: ids }));
+    } else {
+      // 跨欄移動
+      dispatch(updateTaskStatus({ id: draggableId, status: destination.droppableId as TaskStatus }));
     }
-
-    // 取得目標狀態
-    const newStatus = destination.droppableId as TaskStatus;
-
-    // 更新拖拽任務的狀態
-    dispatch(updateTaskStatus({ id: draggableId, status: newStatus }));
   };
 
   // 處理搜索輸入
@@ -105,6 +217,7 @@ const TaskBoard: React.FC = () => {
       priority: null,
       searchText: "",
       dueDate: "all",
+      tags: [],
     });
   };
 
@@ -252,11 +365,36 @@ const TaskBoard: React.FC = () => {
         return false;
       }
 
+      // 標籤篩選
+      if (filters.tags.length > 0) {
+        if (
+          !task.tags ||
+          !filters.tags.every((tag) => task.tags!.includes(tag))
+        ) {
+          return false;
+        }
+      }
+
       return true;
     });
   };
 
-  const filteredTasks = filterTasks(tasks);
+  const sortTasks = (list: TaskData[]): TaskData[] => {
+    if (sortBy === "priority") {
+      return [...list].sort((a, b) => a.priority - b.priority);
+    }
+    if (sortBy === "dueDate") {
+      return [...list].sort((a, b) => {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return a.dueDate - b.dueDate;
+      });
+    }
+    return list;
+  };
+
+  const filteredAndSortedTasks = sortTasks(filterTasks(tasks));
 
   return (
     <div className="task-board-container">
@@ -264,9 +402,26 @@ const TaskBoard: React.FC = () => {
         <Title level={2}>開始任務</Title>
         <div className="header-actions">
           <Button
+            type={showStats ? "primary" : "default"}
+            icon={<BarChartOutlined />}
+            onClick={() => setShowStats(!showStats)}
+            title="統計面板"
+          />
+          <Button
+            icon={<UndoOutlined />}
+            onClick={() => dispatch(undo())}
+            disabled={!canUndo}
+            title="復原 (Ctrl+Z)"
+          />
+          <Button
+            icon={<RedoOutlined />}
+            onClick={() => dispatch(redo())}
+            disabled={!canRedo}
+            title="重做 (Ctrl+Y)"
+          />
+          <Button
             icon={<DownloadOutlined />}
             onClick={handleExportTasks}
-            style={{ marginRight: 8 }}
           >
             導出任務
           </Button>
@@ -284,20 +439,33 @@ const TaskBoard: React.FC = () => {
             accept=".json"
             onChange={handleFileChange}
           />
-          <TaskForm />
+          <TaskForm ref={addTaskRef} />
         </div>
       </div>
 
+      {showStats && <StatsPanel tasks={tasks} />}
+
       <div className="task-board-filters">
         <Search
-          placeholder="搜尋任務..."
+          ref={searchRef}
+          placeholder="搜尋任務... (快捷鍵: /)"
           allowClear
           enterButton={<SearchOutlined />}
           onSearch={handleSearch}
-          style={{ width: 250 }}
+          style={{ width: 260 }}
           value={filters.searchText}
           onChange={(e) => handleSearch(e.target.value)}
         />
+
+        <Select
+          value={sortBy}
+          onChange={setSortBy}
+          style={{ width: 130 }}
+        >
+          <Option value="default">預設排序</Option>
+          <Option value="priority">按優先級</Option>
+          <Option value="dueDate">按截止日期</Option>
+        </Select>
 
         <Button
           type={showFilters ? "primary" : "default"}
@@ -309,11 +477,20 @@ const TaskBoard: React.FC = () => {
 
         {filters.priority !== null ||
         filters.dueDate !== "all" ||
-        filters.searchText ? (
+        filters.searchText ||
+        filters.tags.length > 0 ? (
           <Button icon={<ClearOutlined />} onClick={handleClearFilters}>
             清除篩選
           </Button>
         ) : null}
+
+        <Button
+          type={batchMode ? "primary" : "default"}
+          icon={batchMode ? <CloseSquareOutlined /> : <CheckSquareOutlined />}
+          onClick={() => (batchMode ? handleExitBatch() : setBatchMode(true))}
+        >
+          {batchMode ? "結束選取" : "批次操作"}
+        </Button>
       </div>
 
       {showFilters && (
@@ -350,6 +527,41 @@ const TaskBoard: React.FC = () => {
                 <Option value="future">未來</Option>
               </Select>
             </div>
+
+            {allTags.length > 0 && (
+              <div className="filter-group">
+                <span className="filter-label">標籤：</span>
+                <Select
+                  mode="multiple"
+                  style={{ minWidth: 160 }}
+                  placeholder="全部標籤"
+                  value={filters.tags}
+                  onChange={(value) => setFilters({ ...filters, tags: value })}
+                  options={allTags.map((tag) => ({ label: tag, value: tag }))}
+                />
+              </div>
+            )}
+          </Space>
+        </div>
+      )}
+
+      {batchMode && (
+        <div className="batch-action-bar">
+          <Space wrap>
+            <Button size="small" onClick={handleSelectAll}>
+              {selectedIds.length === filteredAndSortedTasks.length && filteredAndSortedTasks.length > 0
+                ? "取消全選"
+                : "全選"}
+            </Button>
+            {selectedIds.length > 0 && (
+              <>
+                <span className="batch-count">已選 {selectedIds.length} 筆</span>
+                <Button size="small" onClick={() => handleBatchMove("todo")}>移至待處理</Button>
+                <Button size="small" onClick={() => handleBatchMove("in-progress")}>移至進行中</Button>
+                <Button size="small" onClick={() => handleBatchMove("done")}>移至已完成</Button>
+                <Button size="small" danger onClick={handleBatchDelete}>刪除選取</Button>
+              </>
+            )}
           </Space>
         </div>
       )}
@@ -358,13 +570,17 @@ const TaskBoard: React.FC = () => {
 
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="task-board">
-          <TaskColumn title="待處理" status="todo" tasks={filteredTasks} />
-          <TaskColumn
-            title="進行中"
-            status="in-progress"
-            tasks={filteredTasks}
-          />
-          <TaskColumn title="已完成" status="done" tasks={filteredTasks} />
+          {(["todo", "in-progress", "done"] as const).map((status) => (
+            <TaskColumn
+              key={status}
+              title={status === "todo" ? "待處理" : status === "in-progress" ? "進行中" : "已完成"}
+              status={status}
+              tasks={filteredAndSortedTasks}
+              batchMode={batchMode}
+              selectedIds={selectedIds}
+              onToggleSelect={handleToggleSelect}
+            />
+          ))}
         </div>
       </DragDropContext>
     </div>

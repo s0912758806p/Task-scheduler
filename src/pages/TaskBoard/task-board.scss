@@ -2,42 +2,51 @@
 
 .task-board-container {
   background-color: $background-color;
-  padding: 24px;
-  min-height: calc(100vh - 64px);
+  padding: $spacing-lg;
+  min-height: calc(100vh - #{$header-height});
 
   .task-board-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: $spacing-lg;
 
     h2 {
       margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: $text-color;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: $spacing-sm;
+      flex-wrap: wrap;
 
       @media (max-width: 768px) {
-        flex-wrap: wrap;
         justify-content: flex-end;
-        gap: 8px;
       }
     }
   }
 
+  /* ── Filter / Toolbar bar ─────────────────────────────── */
   .task-board-filters {
     display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
     flex-wrap: wrap;
     align-items: center;
+    padding: $spacing-sm $spacing-md;
+    background-color: $component-background;
+    border: 1px solid $border-color;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-xs;
 
     @media (max-width: 576px) {
       flex-direction: column;
-      align-items: flex-start;
+      align-items: stretch;
 
       .ant-input-search {
         width: 100% !important;
@@ -45,65 +54,95 @@
     }
   }
 
+  /* ── Batch action bar ─────────────────────────────────── */
+  .batch-action-bar {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: linear-gradient(135deg, rgba($primary-color, 0.06) 0%, rgba(124, 58, 237, 0.04) 100%);
+    border: 1px solid rgba($primary-color, 0.2);
+    border-radius: $radius-lg;
+    margin-bottom: $spacing-md;
+    backdrop-filter: blur(4px);
+
+    .batch-count {
+      font-size: 13px;
+      color: $primary-color;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+  }
+
+  /* ── Expanded filter panel ────────────────────────────── */
   .task-filter-options {
-    background-color: #f5f5f5;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
+    background-color: $component-background;
+    border: 1px solid $border-color;
+    border-radius: $radius-lg;
+    padding: $spacing-md;
+    margin-bottom: $spacing-md;
+    box-shadow: $shadow-xs;
 
     .filter-group {
       display: flex;
       align-items: center;
-      margin-right: 24px;
+      margin-right: $spacing-lg;
 
       .filter-label {
-        margin-right: 8px;
-        color: rgba(0, 0, 0, 0.65);
+        margin-right: $spacing-sm;
+        color: $text-secondary;
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
       }
     }
   }
 
+  /* ── Kanban grid ──────────────────────────────────────── */
   .task-board {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: $spacing-md;
     width: 100%;
+    align-items: start;
 
     @media (max-width: 1024px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 640px) {
       grid-template-columns: 1fr;
     }
   }
 }
 
-// Dark Theme Styles
+/* ── Dark Theme ───────────────────────────────────────── */
 .dark-theme {
   .task-board-container {
     background-color: $dark-background-color;
 
-    .task-board-header {
-      h2 {
-        color: $dark-text-color;
-      }
+    .task-board-header h2 {
+      color: $dark-text-color;
     }
 
     .task-board-filters {
-      .ant-btn {
+      background-color: $dark-component-background;
+      border-color: $dark-border-color;
+
+      .ant-btn:not(.ant-btn-primary) {
         border-color: $dark-border-color;
+        color: $dark-text-color;
+        background-color: transparent;
 
-        &:not(.ant-btn-primary) {
-          color: $dark-text-color;
-          background-color: $dark-component-background;
-
-          &:hover {
-            color: $dark-primary-color;
-            border-color: $dark-primary-color;
-          }
+        &:hover {
+          color: $dark-primary-color;
+          border-color: $dark-primary-color;
         }
       }
 
       .ant-input-search {
         .ant-input {
-          background-color: $dark-component-background;
+          background-color: $dark-surface-color;
           border-color: $dark-border-color;
           color: $dark-text-color;
 
@@ -113,11 +152,11 @@
         }
 
         .ant-input-group-addon {
-          background-color: $dark-component-background;
+          background-color: $dark-surface-color;
           border-color: $dark-border-color;
 
           .ant-btn {
-            background-color: $dark-component-background;
+            background-color: $dark-surface-color;
             border-color: $dark-border-color;
 
             &:hover {
@@ -129,15 +168,18 @@
       }
     }
 
+    .batch-action-bar {
+      background: linear-gradient(135deg, rgba($dark-primary-color, 0.12) 0%, rgba(167, 139, 250, 0.08) 100%);
+      border-color: rgba($dark-primary-color, 0.3);
+
+      .batch-count {
+        color: $dark-primary-color;
+      }
+    }
+
     .task-filter-options {
       background-color: $dark-component-background;
-      border: 1px solid $dark-border-color;
-
-      .filter-group {
-        .filter-label {
-          color: $dark-text-light;
-        }
-      }
+      border-color: $dark-border-color;
     }
   }
 }

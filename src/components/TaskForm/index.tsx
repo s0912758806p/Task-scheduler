@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState, forwardRef, useImperativeHandle } from 'react';
 import { Form, Input, Button, Select, DatePicker, Modal, Row, Col } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { useAppDispatch } from '../../hooks/redux';
+import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { addTask } from '../../store/taskSlice';
 import { TaskStatus } from '../../types/task';
 import './task-form.scss';
@@ -9,14 +9,19 @@ import './task-form.scss';
 const { Option } = Select;
 const { TextArea } = Input;
 
-const TaskForm: React.FC = () => {
+export interface TaskFormHandle {
+  open: () => void;
+}
+
+const TaskForm = forwardRef<TaskFormHandle, {}>((_, ref) => {
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const dispatch = useAppDispatch();
+  const { activeBoardId } = useAppSelector((state) => state.board);
 
-  const showModal = () => {
-    setIsModalVisible(true);
-  };
+  const showModal = () => setIsModalVisible(true);
+
+  useImperativeHandle(ref, () => ({ open: showModal }));
 
   const handleCancel = () => {
     setIsModalVisible(false);
@@ -25,15 +30,15 @@ const TaskForm: React.FC = () => {
 
   const handleSubmit = () => {
     form.validateFields().then((values) => {
-      const taskData = {
+      dispatch(addTask({
+        boardId: activeBoardId,
         title: values.title,
         description: values.description,
         status: values.status as TaskStatus,
         priority: Number(values.priority),
         dueDate: values.dueDate ? values.dueDate.valueOf() : undefined,
-      };
-      
-      dispatch(addTask(taskData));
+        tags: values.tags || [],
+      }));
       setIsModalVisible(false);
       form.resetFields();
     });
@@ -41,15 +46,15 @@ const TaskForm: React.FC = () => {
 
   return (
     <>
-      <Button 
-        type="primary" 
+      <Button
+        type="primary"
         onClick={showModal}
         icon={<PlusOutlined />}
         className="add-task-button"
       >
         新增任務
       </Button>
-      
+
       <Modal
         title="新增任務"
         open={isModalVisible}
@@ -61,10 +66,7 @@ const TaskForm: React.FC = () => {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          initialValues={{
-            status: 'todo',
-            priority: '2',
-          }}
+          initialValues={{ status: 'todo', priority: '2' }}
         >
           <Form.Item
             name="title"
@@ -73,14 +75,11 @@ const TaskForm: React.FC = () => {
           >
             <Input placeholder="請輸入任務名稱" />
           </Form.Item>
-          
-          <Form.Item
-            name="description"
-            label="任務描述"
-          >
+
+          <Form.Item name="description" label="任務描述">
             <TextArea rows={3} placeholder="請輸入任務描述（選填）" />
           </Form.Item>
-          
+
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -95,7 +94,7 @@ const TaskForm: React.FC = () => {
                 </Select>
               </Form.Item>
             </Col>
-            
+
             <Col span={12}>
               <Form.Item
                 name="priority"
@@ -111,14 +110,19 @@ const TaskForm: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
-          
-          <Form.Item
-            name="dueDate"
-            label="截止日期"
-          >
+
+          <Form.Item name="dueDate" label="截止日期">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
-          
+
+          <Form.Item name="tags" label="標籤">
+            <Select
+              mode="tags"
+              placeholder="輸入標籤後按 Enter 新增（選填）"
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+
           <Form.Item className="form-actions">
             <Button onClick={handleCancel} style={{ marginRight: 8 }}>
               取消
@@ -131,6 +135,6 @@ const TaskForm: React.FC = () => {
       </Modal>
     </>
   );
-};
+});
 
-export default TaskForm; 
+export default TaskForm;

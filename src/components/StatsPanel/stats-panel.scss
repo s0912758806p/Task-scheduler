@@ -1,0 +1,125 @@
+@use "../../styles/variables" as *;
+
+.stats-panel {
+  margin-bottom: $spacing-md;
+
+  .stat-card {
+    border-radius: $radius-md !important;
+    border: 1px solid $border-color !important;
+    box-shadow: $shadow-xs;
+    transition: $transition-base;
+    overflow: hidden;
+
+    &:hover {
+      box-shadow: $shadow-sm;
+      transform: translateY(-1px);
+    }
+
+    // Subtle gradient tints per status
+    &--todo {
+      background: linear-gradient(135deg, $component-background 60%, rgba($text-light, 0.06) 100%);
+    }
+
+    &--progress {
+      background: linear-gradient(135deg, $component-background 60%, rgba($primary-color, 0.06) 100%);
+    }
+
+    &--done {
+      background: linear-gradient(135deg, $component-background 60%, rgba($success-color, 0.06) 100%);
+    }
+
+    &--alert {
+      border-color: rgba($error-color, 0.25) !important;
+      background: linear-gradient(135deg, $component-background 60%, rgba($error-color, 0.04) 100%);
+    }
+
+    .ant-statistic-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: $text-secondary;
+      letter-spacing: 0;
+    }
+
+    .ant-statistic-content-value {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .ant-card-body {
+      padding: 14px 16px;
+    }
+  }
+
+  .stats-bottom {
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+    margin-top: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background-color: $component-background;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+  }
+
+  .stats-progress {
+    flex: 1;
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+
+      span {
+        font-size: 12px;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+/* ── Dark Theme ──────────────────────────────────────────── */
+.dark-theme {
+  .stats-panel {
+    .stat-card {
+      background-color: $dark-component-background !important;
+      border-color: $dark-border-color !important;
+
+      &--todo {
+        background: linear-gradient(135deg, $dark-component-background 60%, rgba(255, 255, 255, 0.02) 100%) !important;
+      }
+
+      &--progress {
+        background: linear-gradient(135deg, $dark-component-background 60%, rgba($dark-primary-color, 0.06) 100%) !important;
+      }
+
+      &--done {
+        background: linear-gradient(135deg, $dark-component-background 60%, rgba($dark-success-color, 0.06) 100%) !important;
+      }
+
+      &--alert {
+        border-color: rgba($dark-error-color, 0.3) !important;
+        background: linear-gradient(135deg, $dark-component-background 60%, rgba($dark-error-color, 0.06) 100%) !important;
+      }
+
+      .ant-statistic-title {
+        color: $dark-text-secondary;
+      }
+
+      .ant-statistic-content-value {
+        color: $dark-text-color;
+      }
+    }
+
+    .stats-bottom {
+      background-color: $dark-component-background;
+      border-color: $dark-border-color;
+    }
+
+    .stats-progress {
+      .ant-progress-inner {
+        background-color: rgba(255, 255, 255, 0.06);
+      }
+    }
+  }
+}

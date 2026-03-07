@@ -1,0 +1,68 @@
+@use "../../styles/variables" as *;
+
+.board-selector {
+  background-color: $component-background;
+  border-bottom: 1px solid $border-color;
+  padding: 0 $spacing-lg;
+  position: sticky;
+  top: $header-height;
+  z-index: 90;
+
+  .ant-tabs {
+    margin-bottom: 0;
+
+    .ant-tabs-nav {
+      margin-bottom: 0;
+
+      &::before {
+        border-bottom: none;
+      }
+    }
+
+    // Card-style tabs modernized
+    &.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+      border-radius: $radius-sm $radius-sm 0 0;
+      border-color: $border-color;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      transition: $transition-fast;
+      color: $text-secondary;
+
+      &:hover {
+        color: $primary-color;
+      }
+
+      &.ant-tabs-tab-active {
+        color: $primary-color;
+        font-weight: 600;
+        background-color: $background-color;
+        border-bottom-color: $background-color;
+      }
+    }
+  }
+}
+
+/* ── Dark Theme ──────────────────────────────────────────── */
+.dark-theme {
+  .board-selector {
+    background-color: $dark-component-background;
+    border-bottom-color: $dark-border-color;
+
+    .ant-tabs.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+      background-color: $dark-surface-color;
+      border-color: $dark-border-color;
+      color: $dark-text-secondary;
+
+      &:hover {
+        color: $dark-primary-color;
+      }
+
+      &.ant-tabs-tab-active {
+        background-color: $dark-component-background;
+        border-bottom-color: $dark-component-background;
+        color: $dark-primary-color;
+      }
+    }
+  }
+}

@@ -2,109 +2,183 @@
 
 .task-column {
   width: 100%;
-  min-height: 500px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  background-color: $component-background;
+  border: 1px solid $border-color;
+  transition: $transition-base;
+  display: flex;
+  flex-direction: column;
 
-  &:nth-child(1) {
-    background-color: rgba(217, 217, 217, 0.1);
-    border-top: 4px solid #d9d9d9;
+  // Status accent stripe
+  &.column-status-todo {
+    border-top: 3px solid $text-light;
   }
 
-  &:nth-child(2) {
-    background-color: rgba(24, 144, 255, 0.05);
-    border-top: 4px solid #1890ff;
+  &.column-status-in-progress {
+    border-top: 3px solid $primary-color;
   }
 
-  &:nth-child(3) {
-    background-color: rgba(82, 196, 26, 0.05);
-    border-top: 4px solid #52c41a;
+  &.column-status-done {
+    border-top: 3px solid $success-color;
   }
 
+  /* ── Column header ──────────────────────────────────── */
   .column-header {
-    padding: 16px;
-    border-bottom: 1px solid #e8e8e8;
-    background-color: rgba(255, 255, 255, 0.7);
+    padding: $spacing-md $spacing-md $spacing-sm;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+
+    .column-title-group {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      flex: 1;
+    }
 
     .ant-typography {
       margin-bottom: 0;
-      font-size: 18px;
-    }
-
-    .badge {
-      margin-right: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: $text-color;
     }
 
     .task-count {
-      font-size: 14px;
-      font-weight: normal;
-      color: rgba(0, 0, 0, 0.45);
-      margin-left: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 7px;
+      background-color: $surface-color;
+      border-radius: $radius-full;
+      font-size: 12px;
+      font-weight: 600;
+      color: $text-secondary;
+      line-height: 1;
     }
   }
 
+  /* ── Task list drop zone ────────────────────────────── */
   .task-list {
-    padding: 16px;
-    min-height: 400px;
-    max-height: calc(100vh - 220px);
+    padding: $spacing-sm $spacing-md $spacing-md;
+    min-height: 120px;
+    max-height: calc(100vh - #{$header-height} - 200px);
     overflow-y: auto;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.15s ease;
+    flex: 1;
+    scrollbar-width: thin;
 
-    // 當列表正在作為拖入目標時的樣式
     &.dragging-over {
-      background-color: rgba(24, 144, 255, 0.1);
+      background-color: rgba($primary-color, 0.04);
+      border-radius: 0 0 $radius-lg $radius-lg;
     }
+  }
 
-    .empty-card {
-      color: #999;
-      text-align: center;
-      border-style: dashed;
-      margin-bottom: 0;
-      height: 100px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+  /* ── Empty state ───────────────────────────────────── */
+  .empty-card {
+    color: $text-light;
+    text-align: center;
+    border: 2px dashed $border-color !important;
+    border-radius: $radius-md !important;
+    margin-bottom: 0;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    background: transparent !important;
+    box-shadow: none !important;
+    cursor: default;
+  }
 
-    .ant-card {
-      margin-bottom: 12px;
+  /* ── Quick add input ────────────────────────────────── */
+  .quick-add-input {
+    padding: $spacing-xs $spacing-md $spacing-sm;
+    border-top: 1px solid $border-light;
 
-      &:last-child {
-        margin-bottom: 0;
+    .ant-input {
+      font-size: 13px;
+      color: $text-secondary;
+      background: transparent;
+      border-color: transparent;
+      padding-left: 0;
+      box-shadow: none;
+
+      &::placeholder {
+        color: $text-light;
+      }
+
+      &:focus {
+        color: $text-color;
+        border-color: $border-color;
+        background: $surface-color;
+        padding-left: $spacing-sm;
+        border-radius: $radius-sm;
+        box-shadow: none;
       }
     }
   }
 }
 
-// 深色主題下的樣式
+/* ── Dark Theme ──────────────────────────────────────── */
 .dark-theme {
   .task-column {
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    background-color: $dark-component-background;
+    border-color: $dark-border-color;
+    box-shadow: $dark-shadow-sm;
 
-    &:nth-child(1) {
-      background-color: rgba(60, 60, 60, 0.3);
-      border-top: 4px solid rgb(217, 217, 217);
+    &.column-status-todo {
+      border-top-color: $dark-border-color;
     }
 
-    &:nth-child(2) {
-      background-color: rgba(60, 60, 60, 0.3);
-      border-top: 4px solid rgb(24, 144, 255);
+    &.column-status-in-progress {
+      border-top-color: $dark-primary-color;
     }
 
-    &:nth-child(3) {
-      background-color: rgba(60, 60, 60, 0.3);
-      border-top: 4px solid rgb(82, 196, 26);
+    &.column-status-done {
+      border-top-color: $dark-success-color;
     }
 
     .column-header {
-      background-color: rgba(31, 31, 31, 0.7);
-      border-bottom: 1px solid $dark-border-color;
+      .ant-typography {
+        color: $dark-text-color;
+      }
+
+      .task-count {
+        background-color: $dark-surface-color;
+        color: $dark-text-secondary;
+      }
     }
 
     .task-list {
       &.dragging-over {
-        background-color: rgba(250, 140, 22, 0.2);
+        background-color: rgba($dark-primary-color, 0.06);
+      }
+    }
+
+    .empty-card {
+      border-color: $dark-border-color !important;
+      color: $dark-text-light;
+    }
+
+    .quick-add-input {
+      border-top-color: $dark-border-color;
+
+      .ant-input {
+        color: $dark-text-secondary;
+
+        &::placeholder {
+          color: $dark-text-light;
+        }
+
+        &:focus {
+          color: $dark-text-color;
+          border-color: $dark-border-color;
+          background: $dark-surface-color;
+        }
       }
     }
   }

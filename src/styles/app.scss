@@ -6,10 +6,18 @@
 }
 
 .app-header {
-  padding: 0 24px;
+  height: $header-height;
+  line-height: $header-height;
+  padding: 0 $spacing-lg;
   display: flex;
   align-items: center;
-  background-color: $primary-color;
+  background-color: $component-background;
+  border-bottom: 1px solid $border-color;
+  box-shadow: $shadow-xs;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
 
   .header-content {
     width: 100%;
@@ -19,9 +27,13 @@
   }
 
   h1 {
-    color: #fff;
+    color: $text-color;
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+
+    color: $primary-color;
   }
 }
 
@@ -29,64 +41,19 @@
   padding: 0;
 }
 
-/* Dark Theme Styles */
+/* ── Dark Theme ──────────────────────────────────────────── */
 .dark-theme {
+  .app-container {
+    background-color: $dark-background-color;
+  }
+
   .app-header {
-    background-color: #333;
-    border-bottom: 1px solid #555;
+    background-color: rgba($dark-surface-color, 0.95);
+    border-bottom-color: $dark-border-color;
+    box-shadow: 0 1px 0 $dark-border-color;
 
     h1 {
-      color: #fff;
+      color: $dark-primary-color;
     }
-  }
-}
-
-.task-board {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: $spacing-lg;
-  margin-top: $spacing-lg;
-}
-
-.task-column {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: $spacing-md;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
-  .column-header {
-    margin-bottom: $spacing-md;
-    padding-bottom: $spacing-md;
-    border-bottom: 1px solid $border-color;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    h3 {
-      margin: 0;
-    }
-  }
-
-  .task-list {
-    min-height: 200px;
-  }
-}
-
-// Priority indicators
-.priority {
-  &-0 {
-    border-left: 3px solid $error-color;
-  }
-
-  &-1 {
-    border-left: 3px solid $warning-color;
-  }
-
-  &-2 {
-    border-left: 3px solid $primary-color;
-  }
-
-  &-3 {
-    border-left: 3px solid $success-color;
   }
 }

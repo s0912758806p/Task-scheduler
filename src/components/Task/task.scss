@@ -1,57 +1,81 @@
 @use "../../styles/variables" as *;
 @use "sass:color";
 
+/* ── Draggable wrapper ───────────────────────────────────── */
 .task-draggable {
-  margin-bottom: 12px;
-
-  // 拖拽中的任務樣式
-  &.is-dragging {
-    .task-card {
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-      opacity: 0.8;
-      transform: rotate(1deg);
-    }
-  }
+  margin-bottom: $spacing-sm;
 
   &:last-child {
     margin-bottom: 0;
   }
+
+  &.is-dragging .task-card {
+    box-shadow: $shadow-xl;
+    transform: rotate(1.5deg) scale(1.02);
+    opacity: 0.95;
+    cursor: grabbing;
+  }
 }
 
+/* ── Task card ───────────────────────────────────────────── */
 .task-card {
-  border-radius: 4px;
-  border-left: 4px solid;
-  transition: all 0.2s ease;
+  border-radius: $radius-md !important;
+  border: 1px solid $border-color !important;
+  border-left: 4px solid !important;
+  box-shadow: $shadow-xs;
+  transition: $transition-slow;
+  cursor: grab;
+  background-color: $component-background;
 
   &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: $shadow-md;
+    transform: translateY(-2px);
+    border-color: color.adjust($border-color, $lightness: -4%) !important;
   }
 
-  // 為不同優先級設置不同的邊框顏色
+  &:active {
+    cursor: grabbing;
+  }
+
+  // ── Priority left-border colors
   &.priority-0 {
-    border-left-color: $error-color; // 緊急 - 紅色
+    border-left-color: $error-color !important;
+    background: linear-gradient(to right, rgba($error-color, 0.03) 0%, $component-background 60px);
   }
 
   &.priority-1 {
-    border-left-color: $warning-color; // 高 - 橙色
+    border-left-color: $warning-color !important;
+    background: linear-gradient(to right, rgba($warning-color, 0.03) 0%, $component-background 60px);
   }
 
   &.priority-2 {
-    border-left-color: $primary-color; // 中 - 藍色
+    border-left-color: $primary-color !important;
+    background: linear-gradient(to right, rgba($primary-color, 0.03) 0%, $component-background 60px);
   }
 
   &.priority-3 {
-    border-left-color: $success-color; // 低 - 綠色
+    border-left-color: $success-color !important;
+    background: linear-gradient(to right, rgba($success-color, 0.03) 0%, $component-background 60px);
   }
 
-  .task-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
+  // ── States
+  &.is-overdue {
+    box-shadow: 0 0 0 2px rgba($error-color, 0.25), $shadow-sm;
   }
 
+  &.is-blocked {
+    opacity: 0.75;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+    }
+  }
+
+  // ── Ant Design card internals
   .ant-card-head {
     min-height: auto;
     padding: 0;
@@ -67,59 +91,138 @@
   }
 
   .ant-card-body {
-    padding: 12px;
+    padding: 10px 12px 12px;
   }
 
-  .task-dates {
-    margin-top: 8px;
-    margin-bottom: 12px;
-  }
-
-  .task-actions {
+  // ── Header row
+  .task-header {
     display: flex;
-    justify-content: flex-end;
-  }
-}
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
 
-// Dark Theme Styles
-.dark-theme {
-  .task-draggable {
-    &.is-dragging {
-      .task-card {
-        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.5);
+    .ant-typography {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.4;
+      flex: 1;
+    }
+  }
+
+  // ── Tags row
+  .task-tags {
+    margin-top: 8px;
+
+    .ant-tag {
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: $radius-full;
+      margin: 0;
+      font-weight: 500;
+    }
+  }
+
+  // ── Subtasks
+  .task-subtasks {
+    margin-top: $spacing-sm;
+    padding: 8px 10px;
+    background-color: $surface-color;
+    border-radius: $radius-sm;
+
+    .subtasks-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+
+      .ant-progress {
+        margin-bottom: 0;
+        flex: 1;
+      }
+    }
+
+    .subtask-item {
+      margin-bottom: 3px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .ant-checkbox-wrapper {
+        align-items: flex-start;
+        gap: 4px;
       }
     }
   }
 
+  // ── Dates row
+  .task-dates {
+    margin-top: 8px;
+    margin-bottom: $spacing-sm;
+  }
+
+  // ── Blocked hint
+  .task-blocked-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: $text-secondary;
+    background-color: $surface-color;
+    padding: 3px 8px;
+    border-radius: $radius-full;
+    font-weight: 500;
+  }
+
+  // ── Action buttons
+  .task-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+}
+
+/* ── Dark Theme ──────────────────────────────────────────── */
+.dark-theme {
+  .task-draggable.is-dragging .task-card {
+    box-shadow: $dark-shadow-lg;
+  }
+
   .task-card {
     background-color: $dark-component-background;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    border-color: $dark-border-color !important;
+    box-shadow: $dark-shadow-sm;
 
     &:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: $dark-shadow-md;
+      border-color: $dark-border-color !important;
     }
 
-    // 深色主題下的優先級顏色調整 - 使用更鮮明的顏色
     &.priority-0 {
-      border-left-color: #ff4d4f; // 更鮮豔的紅色
-      background-color: rgba(255, 77, 79, 0.1);
+      border-left-color: #f87171 !important;
+      background: linear-gradient(to right, rgba(248, 113, 113, 0.08) 0%, $dark-component-background 60px);
     }
 
     &.priority-1 {
-      border-left-color: #fa8c16; // 與主色調一致的橙色
-      background-color: rgba(250, 140, 22, 0.1);
+      border-left-color: #fbbf24 !important;
+      background: linear-gradient(to right, rgba(251, 191, 36, 0.08) 0%, $dark-component-background 60px);
     }
 
     &.priority-2 {
-      border-left-color: #1890ff; // 更鮮豔的藍色
-      background-color: rgba(24, 144, 255, 0.1);
+      border-left-color: #60a5fa !important;
+      background: linear-gradient(to right, rgba(96, 165, 250, 0.08) 0%, $dark-component-background 60px);
     }
 
     &.priority-3 {
-      border-left-color: #52c41a; // 更鮮豔的綠色
-      background-color: rgba(82, 196, 26, 0.1);
+      border-left-color: #4ade80 !important;
+      background: linear-gradient(to right, rgba(74, 222, 128, 0.08) 0%, $dark-component-background 60px);
+    }
+
+    &.is-overdue {
+      box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.3), $dark-shadow-sm;
     }
 
     .ant-typography,
@@ -128,51 +231,59 @@
     }
 
     .ant-typography.ant-typography-secondary {
-      color: $dark-text-light;
+      color: $dark-text-secondary;
     }
 
-    // 任務標籤樣式優化
     .ant-tag {
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-color: $dark-border-color;
 
       &.ant-tag-default {
-        background-color: rgba(255, 255, 255, 0.08);
+        background-color: rgba(255, 255, 255, 0.06);
+        color: $dark-text-secondary;
       }
 
       &.ant-tag-processing {
-        color: #1890ff;
-        background-color: rgba(24, 144, 255, 0.1);
-        border-color: rgba(24, 144, 255, 0.3);
+        color: #60a5fa;
+        background-color: rgba(96, 165, 250, 0.1);
+        border-color: rgba(96, 165, 250, 0.25);
       }
 
       &.ant-tag-success {
-        color: #52c41a;
-        background-color: rgba(82, 196, 26, 0.1);
-        border-color: rgba(82, 196, 26, 0.3);
+        color: #4ade80;
+        background-color: rgba(74, 222, 128, 0.1);
+        border-color: rgba(74, 222, 128, 0.25);
       }
 
       &.ant-tag-error {
-        color: #ff4d4f;
-        background-color: rgba(255, 77, 79, 0.1);
-        border-color: rgba(255, 77, 79, 0.3);
+        color: #f87171;
+        background-color: rgba(248, 113, 113, 0.1);
+        border-color: rgba(248, 113, 113, 0.25);
       }
 
       &.ant-tag-warning {
-        color: #fa8c16;
-        background-color: rgba(250, 140, 22, 0.1);
-        border-color: rgba(250, 140, 22, 0.3);
+        color: #fbbf24;
+        background-color: rgba(251, 191, 36, 0.1);
+        border-color: rgba(251, 191, 36, 0.25);
       }
+    }
+
+    .task-subtasks {
+      background-color: $dark-surface-color;
+    }
+
+    .task-blocked-hint {
+      background-color: $dark-surface-color;
+      color: $dark-text-secondary;
     }
 
     .ant-btn-primary {
       background-color: $dark-primary-color;
       border-color: $dark-primary-color;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      color: #fff;
 
-      &:hover,
-      &:focus {
-        background-color: #fb9e2e; // 使用具體色值代替 lighten 函數
-        border-color: #fb9e2e;
+      &:hover {
+        background-color: $dark-primary-hover;
+        border-color: $dark-primary-hover;
       }
     }
   }

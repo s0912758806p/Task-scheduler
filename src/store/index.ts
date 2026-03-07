@@ -1,12 +1,14 @@
 import { configureStore } from "@reduxjs/toolkit";
 import tasksReducer from "./taskSlice";
 import themeReducer from "./themeSlice";
+import boardReducer from "./boardSlice";
 
 // 建立 store
 export const store = configureStore({
   reducer: {
     tasks: tasksReducer,
     theme: themeReducer,
+    board: boardReducer,
   },
 });
 
