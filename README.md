@@ -1,6 +1,6 @@
 # Task Scheduler
 
-A modern web-based task scheduling application that helps you manage daily tasks, set deadlines, and improve productivity. Supports both light and dark themes with rich task management features.
+A modern Kanban-style task management app built with React and TypeScript. Supports multi-board management, subtasks, task dependencies, browser notifications, drag-and-drop reordering, undo/redo history, and a fully responsive light/dark UI.
 
 ![Task Scheduler Screenshot](./src/assets/Screenshot-task-scheduler.png)
 
@@ -8,16 +8,34 @@ A modern web-based task scheduling application that helps you manage daily tasks
 
 ## Features
 
-- Create, edit, and delete tasks
-- Set task priorities (Urgent, High, Medium, Low) and deadlines
-- Drag and drop functionality: easily move tasks between different status columns (To-Do, In Progress, Completed)
-- Versatile task filtering options:
-  - Filter by priority
-  - Filter by deadline (Overdue, Today, This Week, Future)
-  - Text search functionality
-- Light/Dark theme toggle with system preference auto-switching
-- Import/Export task data
-- Responsive design for desktop and mobile devices
+**Task Management**
+- Create, edit, and delete tasks with title, description, priority, due date, and tags
+- Subtasks with individual checkboxes and a progress bar
+- Task dependencies — block a task until its prerequisites are completed
+- Batch operations: multi-select tasks to move or delete in bulk
+- Undo / Redo support for all task mutations
+
+**Boards**
+- Multiple boards — create, rename, and delete boards independently
+- Each board maintains its own task list and state
+
+**Views & Filtering**
+- Kanban columns: To-Do / In Progress / Done
+- Drag and drop within and between columns
+- Sort by priority or due date
+- Filter by priority, deadline (Overdue / Today / This Week / Future), and tags
+- Full-text search across task titles and descriptions
+
+**Notifications & UX**
+- Browser push notifications for overdue tasks and tasks due within 24 hours
+- Statistics panel with completion rate and urgent task count
+- Keyboard shortcuts: `N` new task, `/` focus search, `Ctrl+Z` undo, `Ctrl+Y` redo
+- Quick-add input at the bottom of each column
+- Light / Dark theme toggle
+
+**Data**
+- All data persisted in localStorage
+- JSON export and import
 
 ## Installation
 
@@ -35,28 +53,28 @@ npm install
 npm run dev
 ```
 
+Open `http://localhost:5173` in your browser.
+
 ## Usage
 
-After starting the development server, open your browser and navigate to `http://localhost:3000`.
-
-- Click the "Add Task" button in the top-right corner to create a new task
-- Use the search box and filter options to find specific tasks
-- Use buttons on task cards to quickly change task status
-- Alternatively, drag and drop task cards between status columns
-- Click the theme toggle button in the top-right corner to switch between light and dark themes
+| Action | How |
+|--------|-----|
+| New task | Click **新增任務** or press `N` |
+| Search | Click the search bar or press `/` |
+| Move task | Drag the card, or click **開始處理** / **標記完成** |
+| Batch action | Click **批次操作**, select cards, then move or delete |
+| Undo / Redo | `Ctrl+Z` / `Ctrl+Y`, or the toolbar buttons |
+| Switch board | Click tabs below the header |
+| Toggle theme | Click the sun/moon switch in the header |
 
 ## Tech Stack
 
-- **Frontend Framework**: React + TypeScript
+- **Frontend**: React 19 + TypeScript + Vite
 - **State Management**: Redux Toolkit
-- **UI Component Library**: Ant Design
+- **UI Components**: Ant Design 5
 - **Drag and Drop**: @hello-pangea/dnd
-- **Styling**: SCSS (Sass)
-- **Data Storage**: LocalStorage for client-side data persistence
-
-## Project Status
-
-The project currently has all basic functionality implemented and is being continuously improved.
+- **Styling**: SCSS (Sass) with Inter font
+- **Storage**: LocalStorage
 
 ## Contributing
 
@@ -68,4 +86,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Author
 
-Created by Gorman (2025.04)
+Created by Gorman (2025.03)
