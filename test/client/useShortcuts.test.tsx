@@ -2,9 +2,10 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { makeStore } from '@/client/store';
+import { makeStore, useAppSelector } from '@/client/store';
+import { FilterPanel } from '@/components/TopBar/FilterPanel';
 import { ThemeProvider } from '@/client/theme';
-import { setPaletteOpen, toggleBatch } from '@/client/uiSlice';
+import { setPaletteOpen, setShortcutsOpen, toggleBatch } from '@/client/uiSlice';
 import { createToaster, createUndoStack, UndoProvider } from '@/client/undo';
 import { useShortcuts } from '@/client/useShortcuts';
 import type { Board } from '@/lib/types';
@@ -28,10 +29,12 @@ const boards: Board[] = ['b1', 'b2'].map((id, i) => ({
 
 function Harness() {
   useShortcuts();
+  const filterOpen = useAppSelector((s) => s.ui.filterOpen);
   return (
     <div>
       <input aria-label="text" />
-      <input data-search-input aria-label="search" />
+      {/* stands in for TopBar's popover: mounted only while open, like destroyOnHidden */}
+      {filterOpen && <FilterPanel tags={[]} />}
     </div>
   );
 }
@@ -87,11 +90,29 @@ describe('useShortcuts', () => {
     expect(store.getState().ui.paletteOpen).toBe(true);
   });
 
-  it('ignores IME composition, handled events and modified single keys', () => {
+  it('ignores IME composition and modified single keys', () => {
     press('n', { isComposing: true });
     press('n', { keyCode: 229 });
     press('n', { metaKey: true });
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it('ignores an event another listener already handled (defaultPrevented)', () => {
+    const stop = (e: Event) => e.preventDefault();
+    document.body.addEventListener('keydown', stop); // runs before the document listener
+    press('n');
+    press('k', { metaKey: true });
+    document.body.removeEventListener('keydown', stop);
+    expect(push).not.toHaveBeenCalled();
+    expect(store.getState().ui.paletteOpen).toBe(false);
+  });
+
+  it.each(['paletteOpen', 'shortcutsOpen'] as const)('single keys do nothing while %s', (flag) => {
+    store.dispatch(flag === 'paletteOpen' ? setPaletteOpen(true) : setShortcutsOpen(true));
+    const before = store.getState().ui;
+    for (const key of ['n', '1', '/', '?']) press(key);
+    expect(push).not.toHaveBeenCalled();
+    expect(store.getState().ui).toEqual(before);
   });
 
   it('1–9 go to the Nth board in sidebar order', async () => {
@@ -122,6 +143,7 @@ describe('useShortcuts', () => {
     press('/');
     expect(store.getState().ui.filterOpen).toBe(true);
     expect(store.getState().ui.paletteOpen).toBe(false);
+    expect(document.activeElement).toBe(document.querySelector('[data-search-input]'));
 
     store.dispatch(toggleBatch());
     press('/');

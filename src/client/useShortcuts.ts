@@ -6,8 +6,8 @@
 // - In an editable target (input / textarea / select / contenteditable) only ⌘K / Ctrl+K works.
 //   ⌘Z / ⌘⇧Z / Ctrl+Y are left to the browser's own text undo there; elsewhere they call useUndo().
 // - Single keys also stay quiet while the palette or the 快捷鍵 dialog is open.
-//   ⌘K → palette; N → `?task=new`; `/` → on a board (not in batch mode) open the filter popover and
-//   focus its search box, otherwise the palette; 1–9 → the Nth board in sidebar order;
+//   ⌘K → palette; N → `?task=new`; `/` → on a board (not in batch mode) open the filter popover (its
+//   search box [data-search-input] takes focus on mount, see FilterPanel), otherwise the palette; 1–9 → the Nth board in sidebar order;
 //   G then F within 1 s → /focus; ? → 快捷鍵 dialog.
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
@@ -74,8 +74,7 @@ export function useShortcuts() {
       } else if (key === '/') {
         e.preventDefault();
         if (boardPage && !ui.batchMode) {
-          dispatch(setFilterOpen(true));
-          setTimeout(() => document.querySelector<HTMLElement>('[data-search-input]')?.focus(), 0);
+          dispatch(setFilterOpen(true)); // the popover's search box autofocuses when it mounts
         } else {
           dispatch(setPaletteOpen(true));
         }
