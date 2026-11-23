@@ -87,7 +87,7 @@ test/  e2e/     Vitest 單元與 API 測試、Playwright 端對端測試
 需要 Node.js 20.9+ 與 npm。
 
 1. 安裝相依套件：`npm install`
-2. 準備資料庫：在 [Neon](https://neon.tech) 為開發另開一個 branch（不要用正式資料庫），複製它的連線字串（`postgresql://…`）。
+2. 準備資料庫：用 Vercel 上 Preview／Development 共用的那個非正式 Neon 資料庫（見「部署到 Vercel」第 2 步，`vercel env pull .env.local` 會下載它的連線字串），或在 [Neon](https://neon.tech) 自己開一個。**不要用正式資料庫。**
 3. 建立 GitHub OAuth App（GitHub → Settings → Developer settings → OAuth Apps）：
    - Homepage URL：`http://localhost:3000`
    - Authorization callback URL：`http://localhost:3000/api/auth/callback/github`
@@ -140,8 +140,12 @@ Vercel 的 Neon 整合還會加上 `POSTGRES_*`、`PG*`、`NEON_*` 等變數，�
 ## 部署到 Vercel
 
 1. 把專案匯入 Vercel。`vercel.json` 已指定 framework（Next.js）與輸出目錄 `.next`，會蓋過專案設定裡從舊 Vite 版留下的 `dist`。
-2. 接上 Neon：在專案資料夾執行 `vercel integration add neon`（Vercel CLI 需 47 版以上，舊版可用 `npx vercel@latest`），條款在終端機裡確認，連結 Production 與 Preview。它會自動寫入 `DATABASE_URL`。
-3. **讓 Preview 用另一個資料庫。** build 指令每次部署都會先跑 `db:migrate`，Preview 若和 Production 共用 `DATABASE_URL`，任何分支的預覽部署都會把尚未合併的 migration 套到正式資料庫。到 Neon 整合的設定開啟「每個 Preview 部署建立 branch」，或手動把 Preview 的 `DATABASE_URL` 改成另一個 branch。
+2. 接上 Neon，**正式與非正式各用一個資料庫**（Vercel CLI 需 47 版以上，舊版可用 `npx vercel@latest`；條款在終端機裡確認）：
+   - 正式：`vercel integration add neon --billing-plan free_v3 --meta region=sin1 -e production`
+   - Preview 與本機開發：`vercel integration add neon --name task-scheduler-preview --billing-plan free_v3 --meta region=sin1 --meta auth=false -e preview -e development`
+
+   兩者都會自動寫入各自環境的 `DATABASE_URL`，第二個指令也會把 Development 的值下載成本機 `.env.local`。
+3. **為什麼要分開。** build 指令每次部署都會先跑 `db:migrate`，Preview 若和 Production 共用 `DATABASE_URL`，任何分支的預覽部署都會把尚未合併的 migration 套到正式資料庫，未審查的分支程式碼也能讀寫真實使用者資料。若已經把一個資料庫接到所有環境，用 `vercel integration resource disconnect <資源> <專案>` 再 `vercel integration resource connect <資源> <專案> -e production` 改成只接 Production。
 4. 設定其餘環境變數（見上節，不要設 `E2E_AUTH`）。密鑰用 `vercel env add <名稱> <環境>` 在終端機貼上，不要寫進任何檔案；`BETTER_AUTH_SECRET` 可直接 `openssl rand -base64 32 | vercel env add BETTER_AUTH_SECRET production`。
 5. 把 OAuth 的 callback 設成正式網域（或另外建一組給正式環境）：
    - GitHub：`https://task-scheduler-rouge-gr925.vercel.app/api/auth/callback/github`
