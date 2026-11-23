@@ -6,6 +6,11 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  // Phones: room under the last card for the floating 新增任務 button (56 + 16 + 16).
+  @media (max-width: 767px) {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .columns {
