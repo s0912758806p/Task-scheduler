@@ -79,7 +79,7 @@
 
 | 變數 | 說明 |
 |------|------|
-| `DATABASE_URL` | Postgres 連線字串（正式環境用 Neon） |
+| `DATABASE_URL` | Neon 的 Postgres 連線字串（本機開發也一樣：資料庫驅動 `@neondatabase/serverless` 走 Neon 的 WebSocket，一般本機 Postgres 連不上；`npm test` 用 PGlite，不需要） |
 | `BETTER_AUTH_SECRET` | Better Auth 簽署 session 用的密鑰，以 `openssl rand -base64 32` 產生 |
 | `BETTER_AUTH_URL` | 網站的公開網址：本機 `http://localhost:3000`，正式環境為你的網域 |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth App |
@@ -112,11 +112,11 @@
 ## 部署到 Vercel
 
 1. 把專案匯入 Vercel，Framework 選 Next.js（`vercel.json` 已指定）。
-2. 在專案設定加入上節的環境變數（不要設 `E2E_AUTH`）。`DATABASE_URL` 用 Neon 的連線字串，`BETTER_AUTH_URL` 填正式網域（例如 `https://your-app.vercel.app`）。
+2. 在專案設定加入上節的環境變數（不要設 `E2E_AUTH`）。`BETTER_AUTH_URL` 填正式網域（例如 `https://your-app.vercel.app`）。`DATABASE_URL` **依 Vercel 環境分開設定**：Production 用正式的 Neon 資料庫，Preview 用另一個 Neon branch。因為第 4 步的 build 指令每次建置都會先跑 `db:migrate`，Preview 若共用正式的 `DATABASE_URL`，任何分支的預覽部署都會把尚未合併的 migration 套到正式資料庫。
 3. 把 OAuth 的 callback 改成正式網域（或另外再建一組給正式環境）：
    - GitHub：`https://<正式網域>/api/auth/callback/github`
    - Google：`https://<正式網域>/api/auth/callback/google`
-4. 部署。`vercel.json` 的 build 指令是 `npm run db:migrate && npm run build`，每次部署會先對 `DATABASE_URL` 套用尚未執行的 migration，成功才繼續建置；migration 失敗會讓部署失敗而不會上線。
+4. 部署。`vercel.json` 的 build 指令是 `npm run db:migrate && npm run build`，每次部署（Production 與 Preview 都是）會先對該環境的 `DATABASE_URL` 套用尚未執行的 migration，成功才繼續建置；migration 失敗會讓部署失敗而不會上線。
 
 舊網址的訪客上線後必須登入；他們瀏覽器裡的舊資料會在登入後被偵測，並提示匯入。
 
