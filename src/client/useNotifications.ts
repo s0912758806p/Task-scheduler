@@ -80,7 +80,7 @@ export function useNotifications(): Notifications {
       } catch {
         // e.g. Android Chrome: permission exists but the constructor throws. Stop for this session.
         if (changed) writeNotified(notified);
-        setBroken(true);
+        queueMicrotask(() => setBroken(true)); // not synchronously: check() may run inside an effect
         return;
       }
       notified.add(t.id);
