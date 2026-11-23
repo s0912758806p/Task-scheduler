@@ -1,0 +1,339 @@
+// 今日焦點 layout: header, then groups (left) + summary column (right, stacks below ~860px).
+// Rows are 44px tall on touch widths. Colors are tokens only.
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1080px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.date {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.heading {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: start;
+
+  @media (max-width: 860px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.groups,
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.count {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.empty {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 12px;
+  font-size: 13px;
+
+  & + & {
+    border-top: 1px solid var(--border-soft);
+  }
+}
+
+.circle {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--ok);
+    color: var(--ok);
+  }
+}
+
+.lock {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: var(--warn);
+}
+
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.p0 {
+  background: var(--p0);
+}
+.p1 {
+  background: var(--p1);
+}
+.p2 {
+  background: var(--p2);
+}
+.p3 {
+  background: var(--p3);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 550;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.progressMark {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.board {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+%due {
+  min-width: 56px;
+  text-align: right;
+  font-size: 12px;
+}
+
+.due {
+  @extend %due;
+  color: var(--text-3);
+}
+
+.dueToday {
+  @extend %due;
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.dueOverdue {
+  @extend %due;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.cardTitle {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.suggestTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.suggestMeta {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.primary {
+  align-self: flex-start;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+  }
+}
+
+.progressList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progressItem {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+  font-size: 13px;
+}
+
+.progressName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.progressCount {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.bar {
+  grid-column: 1 / -1;
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 4px;
+  background: var(--accent);
+}
+
+.bigNumber {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.bigLabel {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.message {
+  margin: 0;
+  color: var(--text-2);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.skeletonTitle,
+.skeletonBlock {
+  border-radius: 12px;
+  background: var(--surface-2);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeletonTitle {
+  width: 280px;
+  height: 56px;
+}
+
+.skeletonBlock {
+  height: 120px;
+}

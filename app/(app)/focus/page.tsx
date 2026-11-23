@@ -1,4 +1,6 @@
-// 今日焦點 (spec §9). Placeholder heading; the focus view is built in a later task.
+// 今日焦點 /focus (spec §9): renders FocusView; data and loading states are handled client-side.
+import { FocusView } from '@/components/FocusView/FocusView';
+
 export default function FocusPage() {
-  return <h1>今日焦點</h1>;
+  return <FocusView />;
 }

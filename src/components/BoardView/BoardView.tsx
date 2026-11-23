@@ -4,7 +4,7 @@
 // - Data: getBoards + getTasks (whole cache). Loading → skeleton (column background + three
 //   surface-2 blocks per column). First load failed → 「無法載入資料，請重新整理頁面再試一次。」. A board
 //   that is not in getBoards (unknown or someone else's) → 「找不到這個看板」 + link 「回到今日焦點」.
-// - `today` = todayISO() in the browser, passed down as a prop.
+// - `today` = useToday() (browser local day, rolls over at midnight), passed down as a prop.
 // - Cards: the board's tasks through filterTasks(uiSlice.filters) and sortTasks(uiSlice.sort), split
 //   by status. Clicking a card → router.push('?task=<id>', { scroll: false }); the card for
 //   ?task=<id> is drawn selected. 「→」 → update(task, { status: next }) (todo → in-progress → done →
@@ -35,12 +35,12 @@ import { useGetBoardsQuery, useGetTasksQuery } from '@/client/api';
 import { STATUS_LABEL, useTaskCommands } from '@/client/commands';
 import { useAppDispatch, useAppSelector } from '@/client/store';
 import { setSelected, toggleSelected } from '@/client/uiSlice';
+import { useToday } from '@/client/useToday';
 import { useUndo } from '@/client/undo';
 import type { QuickAddInput } from '@/components/QuickAdd/QuickAdd';
 import { StatsStrip } from '@/components/StatsStrip/StatsStrip';
 import { TaskColumn } from '@/components/TaskColumn/TaskColumn';
 import { TopBar } from '@/components/TopBar/TopBar';
-import { todayISO } from '@/lib/dates';
 import { filterTasks, indexById, sortTasks } from '@/lib/taskQueries';
 import type { Task, TaskStatus } from '@/lib/types';
 import { resolveDrop } from './dropPlacement';
@@ -62,7 +62,7 @@ export function BoardView({ boardId }: { boardId: string }) {
   const tasksQuery = useGetTasksQuery();
   const cmds = useTaskCommands();
   const { showToast } = useUndo();
-  const [today] = useState(todayISO);
+  const today = useToday();
   const [dragSource, setDragSource] = useState<TaskStatus | null>(null);
   const [loadingSamples, setLoadingSamples] = useState(false);
 

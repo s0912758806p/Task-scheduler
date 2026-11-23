@@ -1,7 +1,7 @@
 'use client';
 // Left sidebar (spec §9 layout, 232px): logo, ⌘K search button (opens the command palette via
 // uiSlice), 今日焦點 with a badge = overdue + due-today open tasks across all boards
-// (taskQueries.focusGroups), the board list with open-task counts (from the task cache; the
+// (taskQueries.focusGroups, today from useToday so it rolls over at midnight), the board list with open-task counts (from the task cache; the
 // server's openCount until tasks load), 新增看板, and the footer: theme toggle (淺色 → 深色 →
 // 跟隨系統), 匯入／匯出 and 到期提醒 (wired in Task 17), 快捷鍵 help, and the user menu (登出).
 // The current page comes from usePathname(); following a link closes the mobile drawer.
@@ -13,6 +13,7 @@ import { useMemo, useState } from 'react';
 import { useDeleteBoardMutation, useGetBoardsQuery, useGetTasksQuery } from '@/client/api';
 import { useAppDispatch } from '@/client/store';
 import { useThemePreference } from '@/client/theme';
+import { useToday } from '@/client/useToday';
 import { setPaletteOpen, setSidebarOpen } from '@/client/uiSlice';
 import {
   IconBell,
@@ -26,7 +27,6 @@ import {
   IconSun,
   IconTransfer,
 } from '@/components/icons';
-import { todayISO } from '@/lib/dates';
 import { focusGroups, indexById } from '@/lib/taskQueries';
 import { nextTheme, THEME_LABEL } from '@/lib/theme';
 import type { Board } from '@/lib/types';
@@ -47,6 +47,7 @@ export function Sidebar({ user }: { user: SidebarUser }) {
   const { data: tasks } = useGetTasksQuery();
   const [deleteBoard] = useDeleteBoardMutation();
   const [modal, modalHolder] = Modal.useModal();
+  const today = useToday();
   const [creating, setCreating] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
 
@@ -54,9 +55,9 @@ export function Sidebar({ user }: { user: SidebarUser }) {
     if (!tasks) return { openByBoard: null, focusCount: 0 };
     const open = new Map<string, number>();
     for (const t of tasks) if (t.status !== 'done') open.set(t.boardId, (open.get(t.boardId) ?? 0) + 1);
-    const groups = focusGroups(tasks, indexById(tasks), todayISO());
+    const groups = focusGroups(tasks, indexById(tasks), today);
     return { openByBoard: open, focusCount: groups.overdue.length + groups.today.length };
-  }, [tasks]);
+  }, [tasks, today]);
 
   const closeDrawer = () => dispatch(setSidebarOpen(false));
 
