@@ -86,3 +86,37 @@ export const IconLogout = icon(
     <path d="M10 16l-4-4 4-4M6 12h10" />
   </>,
 );
+export const IconFilter = icon(<path d="M4 6h16M7 12h10M10 18h4" />);
+export const IconSort = icon(<path d="M7 4v16M4 17l3 3 3-3M14 6h7M14 12h5M14 18h3" />);
+export const IconSelect = icon(
+  <>
+    <rect x="4" y="4" width="16" height="16" rx="3" />
+    <path d="m8.5 12 2.5 2.5 4.5-5" />
+  </>,
+);
+export const IconUndo = icon(
+  <>
+    <path d="M9 14 4 9l5-5" />
+    <path d="M4 9h10a6 6 0 0 1 0 12h-3" />
+  </>,
+);
+export const IconRedo = icon(
+  <>
+    <path d="m15 14 5-5-5-5" />
+    <path d="M20 9H10a6 6 0 0 0 0 12h3" />
+  </>,
+);
+export const IconArrowRight = icon(<path d="M5 12h14M13 6l6 6-6 6" />);
+export const IconCalendar = icon(
+  <>
+    <rect x="4" y="5" width="16" height="15" rx="2" />
+    <path d="M4 10h16M9 3v4M15 3v4" />
+  </>,
+);
+export const IconLock = icon(
+  <>
+    <rect x="5" y="11" width="14" height="9" rx="2" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </>,
+);
+export const IconCheck = icon(<path d="m5 12.5 4.5 4.5L19 7.5" />);

@@ -192,4 +192,24 @@ describe('useTaskCommands', () => {
       { route: 'PATCH /api/tasks/a', body: { status: 'todo', position: null, insertAfterId: null } },
     ]);
   });
+
+  it('batchMove counts only the tasks that changed status', async () => {
+    // c is already in-progress: the server lists it as updated, but it did not move
+    batchReply = { updated: ['a', 'c'], skipped: [] };
+    const { hook } = await setup();
+
+    await act(() => hook.result.current.cmds.batchMove(['a', 'c'], 'in-progress'));
+
+    expect(hook.result.current.undo.toast).toEqual({ text: '已移動 1 筆', undoable: true });
+  });
+
+  it('batchMove with nothing to move says 「沒有需要移動的任務」 and pushes no undo', async () => {
+    batchReply = { updated: ['c'], skipped: [] };
+    const { hook } = await setup();
+
+    await act(() => hook.result.current.cmds.batchMove(['c'], 'in-progress'));
+
+    expect(hook.result.current.undo.toast).toEqual({ text: '沒有需要移動的任務', undoable: false });
+    expect(hook.result.current.undo.canUndo).toBe(false);
+  });
 });

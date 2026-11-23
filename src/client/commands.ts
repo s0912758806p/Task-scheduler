@@ -15,7 +15,9 @@
 // - remove(task): soft delete; undo = PATCH deletedAt: null; toast 「已刪除「…」」.
 // - batchMove(ids, status) / batchRemove(ids): one batch request; undo covers only the `updated`
 //   ids (a batch move is undone task by task in old column order with insertAfterId; a batch delete
-//   with a batch restore). Toast 「已移動 N 筆」 (+「，M 筆因等待前置任務而略過」) / 「已刪除 N 筆」.
+//   with a batch restore). Toast 「已移動 N 筆」 (+「，M 筆因等待前置任務而略過」) / 「已刪除 N 筆」, where N
+//   counts only tasks whose status actually changed (the server also lists tasks that were already
+//   in the target status as updated); nothing moved and nothing skipped → 「沒有需要移動的任務」.
 // - loadSamples(boardId): creates SAMPLE_TASKS (dates relative to today, dependsOn mapped by title)
 //   in column order; undo = batch delete them; redo = batch restore.
 import { useMemo } from 'react';
@@ -219,8 +221,10 @@ export function useTaskCommands() {
       const blocked = result.skipped.filter((s) => s.reason === 'TASK_BLOCKED').length;
       showToast(
         blocked > 0
-          ? `已移動 ${result.updated.length} 筆，${blocked} 筆因等待前置任務而略過`
-          : `已移動 ${result.updated.length} 筆`,
+          ? `已移動 ${moved.length} 筆，${blocked} 筆因等待前置任務而略過`
+          : moved.length > 0
+            ? `已移動 ${moved.length} 筆`
+            : '沒有需要移動的任務',
         moved.length > 0,
       );
       return result;

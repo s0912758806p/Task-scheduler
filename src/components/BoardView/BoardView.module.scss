@@ -1,0 +1,133 @@
+// Board page layout: header, stats strip, then the three columns (14px gap; they wrap to fewer
+// per row below ~720px of content width). Also the empty-board panel, not-found state and the
+// loading skeleton (column background + surface-2 blocks, slight pulse).
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.emptyBoard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.sampleButton {
+  height: 34px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+  }
+}
+
+.message {
+  margin: 0;
+  color: var(--text-2);
+}
+
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.notFoundTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.link {
+  color: var(--accent-text);
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// ---- skeleton ----
+
+@keyframes pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+%block {
+  border-radius: 10px;
+  background: var(--surface-2);
+  animation: pulse 1.8s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.skeletonTitle {
+  @extend %block;
+  width: 220px;
+  height: 44px;
+}
+
+.skeletonStrip {
+  @extend %block;
+  height: 46px;
+  border-radius: 12px;
+}
+
+.skeletonColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--column);
+}
+
+.skeletonCard {
+  @extend %block;
+  height: 78px;
+  border-radius: 12px;
+}
