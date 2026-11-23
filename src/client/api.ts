@@ -14,6 +14,7 @@
 //   no longer cached re-inserts it optimistically from the snapshot.
 // - Board mutations invalidate Board (deleteBoard also drops that board's tasks from the cache);
 //   importBoard / importLocal invalidate Board and Task. Their errors are toasted too.
+// - batchTasks splits ids into requests of ≤ 500 (sent in order) and merges updated/skipped.
 // Toasts go through the store's thunk extra argument (ApiExtra), see store.ts.
 import {
   createApi,
@@ -38,6 +39,8 @@ export interface UpdateTaskArg {
   patch: TaskPatch;
   snapshot?: Task;
 }
+/** Matches the server's per-request limit on /api/tasks/batch (src/lib/validation.ts). */
+export const BATCH_MAX_IDS = 500;
 export interface BatchArg {
   ids: string[];
   op: 'move' | 'delete' | 'restore';
@@ -291,7 +294,24 @@ export const api = createApi({
         },
       }),
       batchTasks: build.mutation<BatchResult, BatchArg>({
-        query: (body) => ({ url: '/tasks/batch', method: 'POST', body }),
+        // The server takes at most BATCH_MAX_IDS ids per request: send slices one after another and
+        // merge the answers (an import may replace/create up to 2,000 tasks). A failing slice fails
+        // the whole call; the optimistic patch below is rolled back.
+        async queryFn(body, _api, _extra, baseQuery) {
+          const merged: BatchResult = { updated: [], skipped: [] };
+          for (let i = 0; i < Math.max(body.ids.length, 1); i += BATCH_MAX_IDS) {
+            const res = await baseQuery({
+              url: '/tasks/batch',
+              method: 'POST',
+              body: { ...body, ids: body.ids.slice(i, i + BATCH_MAX_IDS) },
+            });
+            if (res.error) return { error: res.error };
+            const part = res.data as BatchResult;
+            merged.updated.push(...part.updated);
+            merged.skipped.push(...part.skipped);
+          }
+          return { data: merged };
+        },
         async onQueryStarted(arg, { dispatch, extra, queryFulfilled }) {
           const patch = dispatch(
             api.util.updateQueryData('getTasks', undefined, (list) => {

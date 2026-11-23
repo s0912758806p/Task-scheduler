@@ -244,4 +244,17 @@ describe('useTaskCommands', () => {
     await act(() => hook.result.current.undo.undo());
     expect(sent).toEqual([{ route: 'POST /api/tasks/batch', body: { ids: [...ids], op: 'delete' } }]);
   });
+
+  it('batchRemove of 600 ids sends two requests (500 + 100) and merges the answers', async () => {
+    const { hook } = await setup();
+    const ids = Array.from({ length: 600 }, (_, i) => `x${i}`);
+    batchReply = { updated: [], skipped: [] };
+    let result: { updated: string[] } | null = null;
+    await act(async () => {
+      result = await hook.result.current.cmds.batchRemove(ids);
+    });
+    const posts = sent.filter((s) => s.route === 'POST /api/tasks/batch').map((s) => (s.body as { ids: string[] }).ids.length);
+    expect(posts).toEqual([500, 100]);
+    expect(result).not.toBeNull();
+  });
 });

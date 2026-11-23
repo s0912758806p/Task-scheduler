@@ -170,4 +170,35 @@ describe('DataMenu', () => {
     await waitFor(() => expect(toaster.get()?.text).toBe('這不是有效的 JSON 檔案'));
     expect(sent).toEqual([]);
   });
+
+  it('undo/redo of a large import send batches of at most 500 ids, in order', async () => {
+    const ids = (prefix: string, n: number) => Array.from({ length: n }, (_, i) => `${prefix}${i}`);
+    const replaced = ids('o', 1200);
+    const imported = ids('n', 900);
+    importReply = { status: 200, body: { imported, replaced, warnings: [] } };
+    const { stack } = setup();
+    await screen.findByText('目前看板：「我的看板」');
+    chooseFile('[]');
+    fireEvent.click(await screen.findByRole('button', { name: /匯\s*入$/ }));
+    await waitFor(() => expect(stack.canUndo()).toBe(true));
+
+    const batches = () =>
+      sent.filter((r) => r.route === 'POST /api/tasks/batch').map((r) => {
+        const b = r.body as { ids: string[]; op: string };
+        return [b.op, b.ids.length, b.ids[0]];
+      });
+    sent.length = 0;
+    await stack.undo();
+    expect(batches()).toEqual([
+      ['restore', 500, 'o0'], ['restore', 500, 'o500'], ['restore', 200, 'o1000'],
+      ['delete', 500, 'n0'], ['delete', 400, 'n500'],
+    ]);
+    expect(stack.canRedo()).toBe(true);
+    sent.length = 0;
+    await stack.redo();
+    expect(batches()).toEqual([
+      ['delete', 500, 'o0'], ['delete', 500, 'o500'], ['delete', 200, 'o1000'],
+      ['restore', 500, 'n0'], ['restore', 400, 'n500'],
+    ]);
+  });
 });

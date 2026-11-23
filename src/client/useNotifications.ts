@@ -6,6 +6,8 @@
 // - While permission is 'granted' (and the tasks are loaded) it checks right away and then every
 //   10 minutes. Due dates are plain dates: overdue = dueDate < today → 「任務已逾期」; due soon =
 //   dueDate is today or tomorrow → 「任務即將到期」. Open (not done) tasks only.
+// - If the Notification constructor throws (Android Chrome), checking stops for the session and
+//   permission reports 'unsupported'.
 // - Each task is notified once ever: ids are kept in localStorage `taskSchedulerNotifiedIds`
 //   (reads/writes are try/catch'd; unreadable storage counts as empty). tag = task id, no icon.
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
@@ -53,7 +55,8 @@ export function useNotifications(): Notifications {
   // enable() so the UI updates at once.
   const browser = useSyncExternalStore(subscribeNever, currentPermission, serverPermission);
   const [answered, setAnswered] = useState<ReminderPermission | null>(null);
-  const permission = answered ?? browser;
+  const [broken, setBroken] = useState(false);
+  const permission = broken ? 'unsupported' : (answered ?? browser);
   const latest = useRef({ tasks, today });
   useEffect(() => {
     latest.current = { tasks, today };
@@ -69,10 +72,17 @@ export function useNotifications(): Notifications {
       if (t.status === 'done' || t.dueDate === null || notified.has(t.id)) continue;
       const overdue = t.dueDate < day;
       if (!overdue && t.dueDate !== day && t.dueDate !== tomorrow) continue;
-      new Notification(overdue ? '任務已逾期' : '任務即將到期', {
-        body: overdue ? `「${t.title}」已超過截止日` : `「${t.title}」將在 24 小時內到期`,
-        tag: t.id,
-      });
+      try {
+        new Notification(overdue ? '任務已逾期' : '任務即將到期', {
+          body: overdue ? `「${t.title}」已超過截止日` : `「${t.title}」將在 24 小時內到期`,
+          tag: t.id,
+        });
+      } catch {
+        // e.g. Android Chrome: permission exists but the constructor throws. Stop for this session.
+        if (changed) writeNotified(notified);
+        setBroken(true);
+        return;
+      }
       notified.add(t.id);
       changed = true;
     }

@@ -159,4 +159,28 @@ describe('useNotifications', () => {
     await setup();
     expect(sent).toHaveLength(3);
   });
+
+  it('stops for the session and reports unsupported when the constructor throws', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout'] });
+    permission = 'granted';
+    let attempts = 0;
+    class Throwing {
+      static get permission() {
+        return permission;
+      }
+      static requestPermission = requestPermission;
+      constructor() {
+        attempts++;
+        throw new TypeError('Illegal constructor');
+      }
+    }
+    vi.stubGlobal('Notification', Throwing);
+    const { result } = await setup();
+    expect(attempts).toBe(1);
+    expect(result.current.permission).toBe('unsupported');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+    });
+    expect(attempts).toBe(1);
+  });
 });
