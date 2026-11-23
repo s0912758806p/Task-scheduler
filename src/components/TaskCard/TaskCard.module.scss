@@ -31,6 +31,18 @@
   min-height: 26px;
 }
 
+// Label around the checkbox: on phones its box is the 44×44 hit area.
+.checkHit {
+  display: grid;
+  place-items: center;
+
+  @media (max-width: 767px) {
+    width: 44px;
+    height: 44px;
+    margin: -8px 0 -8px -12px;
+  }
+}
+
 .check {
   width: 16px;
   height: 16px;

@@ -5,14 +5,17 @@
 // search input [data-search-input] autofocuses on every open; the button shows how many popover
 // filters are set), 排序：手動／優先級／截止日 (uiSlice.sort), 選取 (toggleBatch), 復原 / 重做
 // (useUndo; disabled when that side is empty) and 新增任務 (onNewTask).
+// Phones (< 768px, useMediaQuery): the heading becomes 「☰ 看板名稱▾ 🔍」 — ☰ and the board name open the
+// sidebar drawer (setSidebarOpen), 🔍 opens the ⌘K palette; 新增任務 is left to BoardView's FAB.
 // Batch mode: 「已選 N 筆」 + 移至待處理 / 移至進行中 / 移至已完成 / 刪除 (disabled with nothing
 // selected; onBatchMove / onBatchDelete) + 取消 (toggleBatch, which clears the selection).
 import { Dropdown, Popover } from 'antd';
 import { STATUS_LABEL } from '@/client/commands';
 import { useAppDispatch, useAppSelector } from '@/client/store';
-import { setFilterOpen, setSort, toggleBatch } from '@/client/uiSlice';
+import { setFilterOpen, setPaletteOpen, setSidebarOpen, setSort, toggleBatch } from '@/client/uiSlice';
+import { MOBILE_QUERY, useMediaQuery } from '@/client/useMediaQuery';
 import { useUndo } from '@/client/undo';
-import { IconFilter, IconPlus, IconRedo, IconSelect, IconSort, IconUndo } from '@/components/icons';
+import { IconFilter, IconMenu, IconPlus, IconSearch, IconRedo, IconSelect, IconSort, IconUndo } from '@/components/icons';
 import { popoverFilterCount } from '@/components/BoardView/filters';
 import type { SortKey } from '@/lib/taskQueries';
 import type { TaskStatus } from '@/lib/types';
@@ -42,13 +45,46 @@ export function TopBar({ boardName, total, inProgress, tags, onNewTask, onBatchM
   const selectedCount = useAppSelector((s) => s.ui.selectedIds.length);
   const { undo, redo, canUndo, canRedo } = useUndo();
   const activeFilters = popoverFilterCount(filters);
+  const mobile = useMediaQuery(MOBILE_QUERY);
 
   return (
     <header className={styles.bar}>
-      <div className={styles.heading}>
-        <h1 className={styles.title}>{boardName}</h1>
-        <p className={styles.sub}>{`${total} 項任務 · ${inProgress} 項進行中`}</p>
-      </div>
+      {mobile ? (
+        <div className={styles.mobileBar}>
+          <button
+            type="button"
+            className={styles.barIcon}
+            aria-label="開啟側欄"
+            onClick={() => dispatch(setSidebarOpen(true))}
+          >
+            <IconMenu size={20} />
+          </button>
+          <h1 className={styles.mobileTitle}>
+            <button
+              type="button"
+              className={styles.boardButton}
+              aria-label={`${boardName}，切換看板`}
+              onClick={() => dispatch(setSidebarOpen(true))}
+            >
+              <span className={styles.boardName}>{boardName}</span>
+              <span aria-hidden="true">▾</span>
+            </button>
+          </h1>
+          <button
+            type="button"
+            className={styles.barIcon}
+            aria-label="搜尋與指令"
+            onClick={() => dispatch(setPaletteOpen(true))}
+          >
+            <IconSearch size={20} />
+          </button>
+        </div>
+      ) : (
+        <div className={styles.heading}>
+          <h1 className={styles.title}>{boardName}</h1>
+          <p className={styles.sub}>{`${total} 項任務 · ${inProgress} 項進行中`}</p>
+        </div>
+      )}
 
       {batchMode ? (
         <div className={styles.tools} role="toolbar" aria-label="批次操作">
@@ -129,11 +165,13 @@ export function TopBar({ boardName, total, inProgress, tags, onNewTask, onBatchM
           >
             <IconRedo size={15} />
           </button>
-          <button type="button" className={styles.primary} onClick={onNewTask}>
-            <IconPlus size={15} />
-            新增任務
-            <kbd className={styles.kbd}>N</kbd>
-          </button>
+          {!mobile && (
+            <button type="button" className={styles.primary} onClick={onNewTask}>
+              <IconPlus size={15} />
+              新增任務
+              <kbd className={styles.kbd}>N</kbd>
+            </button>
+          )}
         </div>
       )}
     </header>

@@ -1,7 +1,8 @@
 // Board page layout: header, stats strip, then the three columns (14px gap; they wrap to fewer
 // per row below ~720px of content width). Also the empty-board panel, not-found state and the
-// loading skeleton (column background + surface-2 blocks, slight pulse).
+// phone segmented control and floating button, loading skeleton (column background + surface-2 blocks, slight pulse).
 .board {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -12,6 +13,64 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
   align-items: start;
+}
+
+// ---- phone: segmented control (surface-2 track, 38px tabs padded to 44 tap targets) + FAB ----
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.tab {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.tabInner {
+  width: 100%;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  white-space: nowrap;
+}
+
+.tab[aria-selected='true'] .tabInner {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(28, 27, 24, 0.08);
+  color: var(--text);
+  font-weight: 650;
+}
+
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 6px 16px rgba(28, 27, 24, 0.22);
+  color: var(--on-accent);
+  cursor: pointer;
 }
 
 .emptyBoard {

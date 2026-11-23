@@ -18,6 +18,10 @@
 //   column refuses drops while dragging (no same-column reorder) and a cross-column drop lands at
 //   the top of the target column's manual order. Screen-reader announcements and the drag-handle
 //   instructions are in Chinese (已拿起 / 移到<欄>第 N 個位置 / 已放下 / 已取消移動).
+// - Phones (useMediaQuery(MOBILE_QUERY), < 768px): a segmented control (role tablist, 「待處理 N」「進行中 N」
+//   「已完成 N」, N = visible count after filters) shows one static column at a time (no drag and drop;
+//   status changes via 「→」 and the detail panel); the selected status is component state, reset to
+//   待處理 when the board changes. A 56×56 floating button (aria-label 「新增任務」) opens ?task=new.
 // - Batch mode: cards get checkboxes (uiSlice.selectedIds); 移至… → batchMove, 刪除 → batchRemove
 //   (no confirm, undo via the toast); the selection clears after a successful action and whenever
 //   the board changes (leaving batch mode clears it too, in uiSlice).
@@ -35,8 +39,10 @@ import { useGetBoardsQuery, useGetTasksQuery } from '@/client/api';
 import { STATUS_LABEL, useTaskCommands } from '@/client/commands';
 import { useAppDispatch, useAppSelector } from '@/client/store';
 import { setSelected, toggleSelected } from '@/client/uiSlice';
+import { MOBILE_QUERY, useMediaQuery } from '@/client/useMediaQuery';
 import { useToday } from '@/client/useToday';
 import { useUndo } from '@/client/undo';
+import { IconPlus } from '@/components/icons';
 import type { QuickAddInput } from '@/components/QuickAdd/QuickAdd';
 import { StatsStrip } from '@/components/StatsStrip/StatsStrip';
 import { TaskColumn } from '@/components/TaskColumn/TaskColumn';
@@ -65,6 +71,14 @@ export function BoardView({ boardId }: { boardId: string }) {
   const today = useToday();
   const [dragSource, setDragSource] = useState<TaskStatus | null>(null);
   const [loadingSamples, setLoadingSamples] = useState(false);
+  const mobile = useMediaQuery(MOBILE_QUERY);
+  const [mobileStatus, setMobileStatus] = useState<TaskStatus>('todo');
+  const [mobileBoardId, setMobileBoardId] = useState(boardId);
+  if (mobileBoardId !== boardId) {
+    // Board changed: back to 待處理 (state adjusted during render, no extra effect pass).
+    setMobileBoardId(boardId);
+    setMobileStatus('todo');
+  }
 
   useEffect(() => {
     dispatch(setSelected([]));
@@ -172,6 +186,27 @@ export function BoardView({ boardId }: { boardId: string }) {
     if (action.kind === 'move') void cmds.move(task, action.status, action.position, action.insertAfterId);
   }
 
+  const renderColumn = (status: TaskStatus, isStatic: boolean) => (
+    <TaskColumn
+      key={status}
+      status={status}
+      tasks={columns[status]}
+      byId={byId}
+      today={today}
+      openTaskId={openTaskId}
+      batchMode={batchMode}
+      checkedIds={checkedIds}
+      filtered={hasActiveFilters(filters)}
+      dropDisabled={sort !== 'manual' && dragSource === status}
+      dragDisabled={batchMode}
+      static={isStatic}
+      onCreate={create}
+      onOpen={openTask}
+      onAdvance={advance}
+      onToggleCheck={toggleCheck}
+    />
+  );
+
   return (
     <div className={styles.board}>
       <TopBar
@@ -200,34 +235,46 @@ export function BoardView({ boardId }: { boardId: string }) {
         </div>
       )}
 
-      <DragDropContext
-        onDragStart={onDragStart}
-        onDragUpdate={onDragUpdate}
-        onDragEnd={onDragEnd}
-        dragHandleUsageInstructions="按空白鍵拿起卡片，用方向鍵移動，再按空白鍵放下；按 Esc 取消。"
-      >
-        <div className={styles.columns}>
-          {STATUSES.map((status) => (
-            <TaskColumn
-              key={status}
-              status={status}
-              tasks={columns[status]}
-              byId={byId}
-              today={today}
-              openTaskId={openTaskId}
-              batchMode={batchMode}
-              checkedIds={checkedIds}
-              filtered={hasActiveFilters(filters)}
-              dropDisabled={sort !== 'manual' && dragSource === status}
-              dragDisabled={batchMode}
-              onCreate={create}
-              onOpen={openTask}
-              onAdvance={advance}
-              onToggleCheck={toggleCheck}
-            />
-          ))}
-        </div>
-      </DragDropContext>
+      {mobile ? (
+        <>
+          <div role="tablist" aria-label="任務狀態" className={styles.tabs}>
+            {STATUSES.map((status) => (
+              <button
+                key={status}
+                type="button"
+                role="tab"
+                id={`tab-${status}`}
+                aria-selected={status === mobileStatus}
+                aria-controls="mobile-column"
+                className={styles.tab}
+                onClick={() => setMobileStatus(status)}
+              >
+                <span className={styles.tabInner}>{`${STATUS_LABEL[status]} ${columns[status].length}`}</span>
+              </button>
+            ))}
+          </div>
+          <div role="tabpanel" id="mobile-column" aria-labelledby={`tab-${mobileStatus}`}>
+            {renderColumn(mobileStatus, true)}
+          </div>
+          <button
+            type="button"
+            className={styles.fab}
+            aria-label="新增任務"
+            onClick={() => router.push('?task=new', { scroll: false })}
+          >
+            <IconPlus size={24} />
+          </button>
+        </>
+      ) : (
+        <DragDropContext
+          onDragStart={onDragStart}
+          onDragUpdate={onDragUpdate}
+          onDragEnd={onDragEnd}
+          dragHandleUsageInstructions="按空白鍵拿起卡片，用方向鍵移動，再按空白鍵放下；按 Esc 取消。"
+        >
+          <div className={styles.columns}>{STATUSES.map((status) => renderColumn(status, false))}</div>
+        </DragDropContext>
+      )}
     </div>
   );
 }

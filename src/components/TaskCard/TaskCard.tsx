@@ -70,13 +70,15 @@ export function TaskCard({
     <article className={className}>
       <div className={styles.top}>
         {batchMode && (
-          <input
-            type="checkbox"
-            className={styles.check}
-            checked={checked}
-            onChange={() => onToggleCheck(task)}
-            aria-label={`選取：${task.title}`}
-          />
+          <label className={styles.checkHit}>
+            <input
+              type="checkbox"
+              className={styles.check}
+              checked={checked}
+              onChange={() => onToggleCheck(task)}
+              aria-label={`選取：${task.title}`}
+            />
+          </label>
         )}
         <span
           role="img"

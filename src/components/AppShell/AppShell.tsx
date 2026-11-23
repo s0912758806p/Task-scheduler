@@ -2,7 +2,8 @@
 // Signed-in page frame (spec §9): Sidebar (232px) + <main> + the task detail panel (TaskDetailDock:
 // right column for `?task=<id|new>`, a bottom Drawer on phones) + the bottom UndoToast. Below 768px
 // the sidebar becomes an AntD Drawer opened from the top bar's hamburger (uiSlice.sidebarOpen) and
-// closed on navigation. Mounts the ⌘K CommandPalette, the 快捷鍵 dialog and useShortcuts (the one
+// closed on navigation. The generic mobile bar (hamburger only) is for non-board pages; /b/* pages
+// render their own 「☰ 看板名稱▾ 🔍」 bar in TopBar. Mounts the ⌘K CommandPalette, the 快捷鍵 dialog and useShortcuts (the one
 // global keydown listener). Also starts loading boards and tasks for every page.
 import { Drawer } from 'antd';
 import { usePathname } from 'next/navigation';
@@ -48,16 +49,18 @@ export function AppShell({ user, children }: { user: SidebarUser; children: Reac
         <Sidebar user={user} />
       </Drawer>
       <div className={styles.column}>
-        <header className={styles.mobileBar}>
-          <button
-            type="button"
-            className={styles.hamburger}
-            aria-label="開啟側欄"
-            onClick={() => dispatch(setSidebarOpen(true))}
-          >
-            <IconMenu size={20} />
-          </button>
-        </header>
+        {!pathname?.startsWith('/b/') && (
+          <header className={styles.mobileBar}>
+            <button
+              type="button"
+              className={styles.hamburger}
+              aria-label="開啟側欄"
+              onClick={() => dispatch(setSidebarOpen(true))}
+            >
+              <IconMenu size={20} />
+            </button>
+          </header>
+        )}
         <main className={styles.main}>{children}</main>
       </div>
       {/* useSearchParams: keep it out of the static shell. */}

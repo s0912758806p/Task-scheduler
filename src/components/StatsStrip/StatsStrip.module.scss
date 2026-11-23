@@ -8,6 +8,17 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
+
+  // Phones: one scrolling row of chips instead of wrapping (the page itself never scrolls sideways).
+  @media (max-width: 767px) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+
+    > * {
+      flex: none;
+    }
+  }
 }
 
 .progress {
@@ -114,6 +125,11 @@
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 .spacer {
