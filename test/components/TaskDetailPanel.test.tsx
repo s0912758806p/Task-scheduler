@@ -82,6 +82,8 @@ function renderPanel(taskId: string, boardId: string | null = BOARD_ID) {
   const view = render(
     <Provider store={store}>
       <UndoProvider toaster={toaster}>
+        {/* An input elsewhere on the page, outside the panel. */}
+        <input aria-label="頁面上的輸入框" />
         <TaskDetailPanel taskId={taskId} boardId={boardId} onClose={onClose} />
       </UndoProvider>
     </Provider>,
@@ -212,6 +214,25 @@ describe('TaskDetailPanel — edit', () => {
     fireEvent.keyDown(await titleBox(), { key: 'Escape' });
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('Esc on the page outside any input closes the panel', async () => {
+    const { onClose } = renderPanel('sample-2');
+    await titleBox();
+
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('Esc in an input outside the panel belongs to that input: the panel stays open', async () => {
+    const { onClose } = renderPanel('new');
+    fireEvent.change(await titleBox(), { target: { value: '草稿' } });
+
+    fireEvent.keyDown(screen.getByRole('textbox', { name: '頁面上的輸入框' }), { key: 'Escape' });
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(((await titleBox()) as HTMLTextAreaElement).value).toBe('草稿');
   });
 
   it('刪除 deletes the task and closes the panel', async () => {

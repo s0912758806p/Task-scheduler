@@ -54,12 +54,13 @@ describe('QuickAdd', () => {
     expect(onCreate).not.toHaveBeenCalled();
   });
 
-  it('Esc clears the input', () => {
+  it('Esc clears the input and claims the key (preventDefault)', () => {
     const { input } = setup();
 
     fireEvent.change(input, { target: { value: '修 bug #前端' } });
-    fireEvent.keyDown(input, { key: 'Escape' });
+    const notPrevented = fireEvent.keyDown(input, { key: 'Escape' });
 
     expect(input.value).toBe('');
+    expect(notPrevented).toBe(false);
   });
 });

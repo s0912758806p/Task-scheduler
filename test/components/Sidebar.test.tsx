@@ -120,6 +120,19 @@ describe('Sidebar', () => {
     }
   });
 
+  it('Esc in the inline rename cancels it and claims the key (preventDefault)', async () => {
+    renderSidebar();
+    fireEvent.doubleClick(await screen.findByRole('link', { name: /個人專案/ }));
+    const input = screen.getByRole('textbox', { name: '看板名稱' });
+    fireEvent.change(input, { target: { value: '改一半' } });
+
+    const notPrevented = fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(notPrevented).toBe(false);
+    expect(screen.queryByRole('textbox', { name: '看板名稱' })).toBeNull();
+    expect(screen.getByRole('link', { name: /個人專案/ })).toBeTruthy();
+  });
+
   it('shows the email in the user menu as readable text, not a disabled item', async () => {
     renderSidebar();
     fireEvent.click(await screen.findByRole('button', { name: /王小明/ }));

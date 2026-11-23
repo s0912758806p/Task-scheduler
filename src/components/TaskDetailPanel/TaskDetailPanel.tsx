@@ -15,7 +15,8 @@
 //   focused. 建立, ⌘/Ctrl+Enter, or Enter in the title → create({ boardId, … }); an empty title shows
 //   「請輸入任務名稱」 and creates nothing. With an open prerequisite selected only 待處理 is allowed
 //   (the server would answer 409 TASK_BLOCKED). On success the URL becomes `?task=<new id>`.
-// - Esc closes (also from inside inputs) unless it is closing a Select/DatePicker dropdown.
+// - Esc closes when pressed inside the panel (its inputs too) or outside any input elsewhere on the
+//   page — not from another input (QuickAdd, rename) or while closing a Select/DatePicker dropdown.
 // Server refusals (409 DEPENDENCY_CYCLE, 400, …) are toasted by the API layer, which also rolls the
 // optimistic change back, so the controls revert to the cached values on their own.
 import { ConfigProvider, Input, Tooltip } from 'antd';
@@ -50,7 +51,8 @@ export interface TaskDetailPanelProps {
 
 export function TaskDetailPanel({ taskId, boardId, onClose }: TaskDetailPanelProps) {
   const { data: list } = useGetTasksQuery();
-  const setPopupOpen = useEscapeToClose(onClose);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const setPopupOpen = useEscapeToClose(onClose, rootRef);
 
   let body: ReactNode;
   if (!list) {
@@ -71,7 +73,11 @@ export function TaskDetailPanel({ taskId, boardId, onClose }: TaskDetailPanelPro
     );
   }
 
-  return <ConfigProvider theme={PANEL_THEME}>{body}</ConfigProvider>;
+  return (
+    <ConfigProvider theme={PANEL_THEME}>
+      <div ref={rootRef}>{body}</div>
+    </ConfigProvider>
+  );
 }
 
 interface ModeProps {

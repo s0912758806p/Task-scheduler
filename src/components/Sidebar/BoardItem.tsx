@@ -1,7 +1,8 @@
 'use client';
 // One board row in the sidebar: link to /b/<id> with its open-task count. Double-click the name to
-// rename inline (Enter / blur saves a changed, non-empty name; Esc cancels). Right-click the row or
-// press ⋯ for the menu: 重新命名 / 刪除看板 (the delete confirmation lives in Sidebar).
+// rename inline (Enter / blur saves a changed, non-empty name; Esc cancels, with preventDefault so it
+// does not also close the detail panel). Right-click the row or press ⋯ for the menu: 重新命名 /
+// 刪除看板 (the delete confirmation lives in Sidebar).
 import { Dropdown, type MenuProps } from 'antd';
 import Link from 'next/link';
 import { useState, type KeyboardEvent } from 'react';
@@ -45,7 +46,10 @@ export function BoardItem({
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') commit(e.currentTarget.value);
-    if (e.key === 'Escape') setEditing(false);
+    if (e.key === 'Escape') {
+      e.preventDefault(); // cancels the rename only, not the detail panel
+      setEditing(false);
+    }
   }
 
   return (

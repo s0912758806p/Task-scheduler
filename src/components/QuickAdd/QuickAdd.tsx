@@ -1,7 +1,8 @@
 // Quick-add box at the top of a column (spec §9 「智慧快速新增」). The input is parsed live with
 // parseQuickAdd(value, today); while it yields chips they are shown with 「↵ 新增」.
 // Enter → onCreate({ title, priority (default 2), tags, dueDate, status }) and the box clears; an
-// empty title does nothing. The Enter that confirms an IME composition is ignored. Esc clears.
+// empty title does nothing. The Enter that confirms an IME composition is ignored. Esc clears (and
+// prevents its default, so it does not also close the detail panel).
 import { useState } from 'react';
 import { IconPlus } from '@/components/icons';
 import { parseQuickAdd } from '@/lib/quickAddParser';
@@ -30,6 +31,7 @@ export function QuickAdd({ status, label, today, onCreate }: QuickAddProps) {
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Escape') {
+      e.preventDefault(); // this Esc is the input's: it must not also close the detail panel
       setValue('');
       return;
     }

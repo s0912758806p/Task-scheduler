@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeStore } from '@/client/store';
 import { createToaster, UndoProvider } from '@/client/undo';
 import { MOBILE_QUERY, useMediaQuery } from '@/client/useMediaQuery';
+import { QuickAdd } from '@/components/QuickAdd/QuickAdd';
 import { boardIdFromPath, TaskDetailDock } from '@/components/TaskDetailPanel/TaskDetailDock';
 import { todayISO } from '@/lib/dates';
 import type { Board } from '@/lib/types';
@@ -65,12 +66,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function renderDock() {
+function renderDock(extra?: React.ReactNode) {
   const toaster = createToaster();
   const store = makeStore({ toast: toaster.show });
   return render(
     <Provider store={store}>
       <UndoProvider toaster={toaster}>
+        {extra}
         <TaskDetailDock />
       </UndoProvider>
     </Provider>,
@@ -92,6 +94,22 @@ describe('TaskDetailDock', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '關閉' }));
     expect(replace).toHaveBeenCalledWith(`/b/${BOARD_ID}?x=1`, { scroll: false });
+  });
+
+  it('Esc in QuickAdd clears it and leaves ?task alone; Esc in the panel still closes it', async () => {
+    search = 'task=sample-2';
+    renderDock(<QuickAdd status="todo" label="待處理" today={todayISO()} onCreate={vi.fn()} />);
+    const quick = screen.getByRole('textbox', { name: '快速新增到待處理' }) as HTMLInputElement;
+    await screen.findByRole('region', { name: '任務詳情' });
+
+    fireEvent.change(quick, { target: { value: '還沒打完' } });
+    fireEvent.keyDown(quick, { key: 'Escape' });
+
+    expect(quick.value).toBe('');
+    expect(replace).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(screen.getByRole('textbox', { name: '任務名稱' }), { key: 'Escape' });
+    expect(replace).toHaveBeenCalledWith(`/b/${BOARD_ID}`, { scroll: false });
   });
 
   it('on /focus a new task goes to the first board', async () => {
