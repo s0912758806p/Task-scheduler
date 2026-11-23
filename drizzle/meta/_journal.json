@@ -8,6 +8,13 @@
       "when": 1795426136179,
       "tag": "0000_living_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795427208071,
+      "tag": "0001_open_the_fallen",
+      "breakpoints": true
     }
   ]
 }

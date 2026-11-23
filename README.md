@@ -37,23 +37,26 @@ A modern Kanban-style task management app built with React and TypeScript. Suppo
 - All data persisted in localStorage
 - JSON export and import
 
-## Installation
+## 本機開發
 
-```bash
-# Clone the repository
-git clone https://github.com/Gorman/task-scheduler.git
+需要 Node.js 20.9+ 與 npm。
 
-# Navigate to the project directory
-cd task-scheduler
+1. 安裝相依套件：`npm install`
+2. 建立資料庫：在 [Neon](https://neon.tech) 建一個 Postgres 專案，複製連線字串（`postgresql://…`）。
+3. 建立 GitHub OAuth App（GitHub → Settings → Developer settings → OAuth Apps）：
+   - Homepage URL：`http://localhost:3000`
+   - Authorization callback URL：`http://localhost:3000/api/auth/callback/github`
+4. 建立 Google OAuth 用戶端（Google Cloud Console → API 和服務 → 憑證 → OAuth 用戶端 ID，類型「網頁應用程式」）：
+   - 已授權的重新導向 URI：`http://localhost:3000/api/auth/callback/google`
+5. 複製環境變數範本並填值：`cp .env.example .env.local`
+   - `DATABASE_URL`：第 2 步的連線字串
+   - `BETTER_AUTH_SECRET`：`openssl rand -base64 32` 產生
+   - `BETTER_AUTH_URL`：`http://localhost:3000`
+   - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`、`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`：第 3、4 步取得
+6. 建立資料表：`npm run db:migrate`。drizzle-kit 只讀 `.env`、不讀 `.env.local`，請先在 shell 設定 `DATABASE_URL`，例如 `export $(grep '^DATABASE_URL=' .env.local)`。
+7. 啟動：`npm run dev`，開啟 `http://localhost:3000`。未登入會被導向 `/login`；第一次登入會自動建立「我的看板」。
 
-# Install dependencies
-npm install
-
-# Start the development server
-npm run dev
-```
-
-Open `http://localhost:5173` in your browser.
+GitHub 與 Google 回報相同且已驗證的 email 時，視為同一個使用者。
 
 ## Usage
 
