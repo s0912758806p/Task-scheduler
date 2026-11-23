@@ -1,13 +1,20 @@
 import { eq } from 'drizzle-orm';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { boards, tasks, user } from '@/server/db/schema';
 import type { DB } from '@/server/db';
-import { createTestDb, seedUser } from './helpers/db';
+import { closeTestDb, createTestDb, seedUser } from './helpers/db';
 
 describe('test database', () => {
   let db: DB;
-  beforeEach(async () => {
+  // One PGlite per file; user rows (boards and tasks cascade) are wiped before each test.
+  beforeAll(async () => {
     db = await createTestDb();
+  });
+  afterAll(async () => {
+    await closeTestDb(db);
+  });
+  beforeEach(async () => {
+    await db.delete(user);
   });
 
   it('applies column defaults to a freshly inserted task', async () => {

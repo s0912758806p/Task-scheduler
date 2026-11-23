@@ -11,8 +11,11 @@
 //   vi.mock('@/server/auth', () => ({ requireUser: vi.fn() }));
 //   vi.mock('@/server/db', () => ({ getDb: () => h.db }));
 //   ...
-//   beforeEach(async () => { h.db = await createTestDb(); });
-//   afterEach(async () => { await closeTestDb(h.db); });
+//   // One PGlite per file (creating one per test is slow and can hit hook timeouts under load):
+//   beforeAll(async () => { h.db = await createTestDb(); });
+//   afterAll(async () => { await closeTestDb(h.db); });
+//   beforeEach(async () => { await h.db.delete(user); }); // boards and tasks cascade; then seed fresh users
+//   afterEach(() => { vi.mocked(requireUser).mockReset(); });
 //   vi.mocked(requireUser).mockResolvedValue({ id, email, name: 'x', image: null });
 //   // 401: vi.mocked(requireUser).mockRejectedValue(new ApiError(401, 'UNAUTHORIZED', '請先登入'));
 //

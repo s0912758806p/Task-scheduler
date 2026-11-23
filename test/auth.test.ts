@@ -1,12 +1,12 @@
 import { betterAuth } from 'better-auth';
 import { eq } from 'drizzle-orm';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildAuthOptions } from '@/server/auth';
 import type { DB } from '@/server/db';
 import { boards } from '@/server/db/schema';
 import { ensureDefaultBoard } from '@/server/services/boards';
 import { safeNextPath } from '@/lib/nextPath';
-import { createTestDb, seedUser } from './helpers/db';
+import { closeTestDb, createTestDb, seedUser } from './helpers/db';
 
 const baseEnv = {
   BETTER_AUTH_SECRET: 'test-secret-test-secret-test-secret-123',
@@ -22,6 +22,9 @@ const baseEnv = {
 let db: DB;
 beforeAll(async () => {
   db = await createTestDb();
+});
+afterAll(async () => {
+  await closeTestDb(db);
 });
 
 describe('buildAuthOptions', () => {
