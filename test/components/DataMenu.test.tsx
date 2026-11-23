@@ -80,14 +80,19 @@ describe('DataMenu', () => {
     const revoked = vi.fn();
     vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: created, revokeObjectURL: revoked }));
     const downloads: string[] = [];
+    /** Revocations seen once the task that clicked the link has finished (null until then). */
+    let revokedAfterClickTask: number | null = null;
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
       downloads.push(this.download);
+      setTimeout(() => (revokedAfterClickTask = revoked.mock.calls.length), 0);
     });
     setup();
     await screen.findByText('目前看板：「我的看板」');
     fireEvent.click(screen.getByRole('button', { name: '匯出目前看板' }));
     await waitFor(() => expect(revoked).toHaveBeenCalledWith('blob:x'));
     expect(downloads).toEqual(['我的看板-2026-11-23.json']);
+    // Revoked in a later task, not right after click(): some browsers start the download asynchronously.
+    expect(revokedAfterClickTask).toBe(0);
   });
 
   it('toasts the server message when the export fails', async () => {

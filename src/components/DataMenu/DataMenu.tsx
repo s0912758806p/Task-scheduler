@@ -4,7 +4,8 @@
 // URL (/b/<id>); on /focus there is no current board and both buttons are disabled.
 // - 匯出: GET /api/boards/:id/export → blob → object URL → <a download>, named by the server's
 //   Content-Disposition (RFC 5987 filename* preferred, then filename), else board-YYYY-MM-DD.json.
-//   The object URL is revoked afterwards. A failed request toasts the server's message.
+//   The object URL is revoked in a later task (setTimeout 0), after the download has started. A
+//   failed request toasts the server's message.
 // - 匯入: pick a .json file → confirm 「匯入會取代「<看板>」目前的任務（其他看板不受影響）。可用 ⌘Z 復原。」
 //   → POST /api/boards/:id/import with the browser time zone. One undo command: undo = batch restore
 //   `replaced` then batch delete `imported`; redo = batch delete `replaced` then batch restore
@@ -73,7 +74,8 @@ export function DataMenu() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      URL.revokeObjectURL(url);
+      // Not synchronously: some browsers start the download after click() returns.
+      setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch {
       showToast('無法連線到伺服器，請檢查網路後再試');
     }

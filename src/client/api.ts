@@ -12,9 +12,11 @@
 //   the cache and toast 「這筆任務已不存在」; any other error toasts the server's message.
 // - updateTask accepts an optional `snapshot`: a restore (patch.deletedAt === null) of a task that is
 //   no longer cached re-inserts it optimistically from the snapshot.
-// - Board mutations invalidate Board (deleteBoard also drops that board's tasks from the cache);
+// - Board mutations invalidate Board (createBoard also inserts the new board into getBoards at once,
+//   so navigating to it never finds it missing; deleteBoard also drops that board's tasks from the cache);
 //   importBoard / importLocal invalidate Board and Task. Their errors are toasted too.
-// - batchTasks splits ids into requests of ≤ 500 (sent in order) and merges updated/skipped.
+// - batchTasks splits ids into requests of ≤ 500 (sent in order) and merges updated/skipped. On any
+//   error it rolls back and also invalidates Task, since earlier slices may already be applied.
 // Toasts go through the store's thunk extra argument (ApiExtra), see store.ts.
 import {
   createApi,
@@ -189,8 +191,19 @@ export const api = createApi({
       createBoard: build.mutation<Board, { name: string }>({
         query: (body) => ({ url: '/boards', method: 'POST', body }),
         invalidatesTags: ['Board'],
-        async onQueryStarted(_arg, { extra, queryFulfilled }) {
-          await queryFulfilled.catch((err) => report(extra, err));
+        async onQueryStarted(_arg, { dispatch, extra, queryFulfilled }) {
+          try {
+            const { data } = await queryFulfilled;
+            // In the cache before the caller navigates to /b/<id>, so BoardView never shows
+            // 「找不到這個看板」 while the Board refetch is in flight.
+            dispatch(
+              api.util.updateQueryData('getBoards', undefined, (list) => {
+                if (!list.some((b) => b.id === data.id)) list.push(data);
+              }),
+            );
+          } catch (err) {
+            report(extra, err);
+          }
         },
       }),
       updateBoard: build.mutation<Board, { id: string; name?: string; position?: number }>({
@@ -296,7 +309,7 @@ export const api = createApi({
       batchTasks: build.mutation<BatchResult, BatchArg>({
         // The server takes at most BATCH_MAX_IDS ids per request: send slices one after another and
         // merge the answers (an import may replace/create up to 2,000 tasks). A failing slice fails
-        // the whole call; the optimistic patch below is rolled back.
+        // the whole call; the optimistic patch below is rolled back and the task list refetched.
         async queryFn(body, _api, _extra, baseQuery) {
           const merged: BatchResult = { updated: [], skipped: [] };
           for (let i = 0; i < Math.max(body.ids.length, 1); i += BATCH_MAX_IDS) {
@@ -325,6 +338,8 @@ export const api = createApi({
             if (arg.op !== 'delete') dispatch(api.util.invalidateTags(['Task']));
           } catch (err) {
             patch.undo();
+            // Earlier slices may already be applied on the server: refetch so the cache shows them.
+            dispatch(api.util.invalidateTags(['Task']));
             report(extra, err);
           }
         },

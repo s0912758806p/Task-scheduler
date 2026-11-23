@@ -164,18 +164,15 @@ describe("FocusView", () => {
     expect(push).toHaveBeenCalledWith("?task=sample-1", { scroll: false });
   });
 
-  it("the completion circle moves the task to the top of done", async () => {
+  it("the completion circle sends a status-only update (top of done, like the board's 「→」)", async () => {
     renderFocus();
     fireEvent.click(
       await screen.findByRole("button", { name: "標記完成：完成專案需求分析" }),
     );
     await waitFor(() => expect(sent).toHaveLength(1));
     expect(sent[0].route).toBe("PATCH /api/tasks/sample-1");
-    expect(sent[0].body).toMatchObject({
-      status: "done",
-      position: null,
-      insertAfterId: null,
-    });
+    // No position: null, which would make the server renumber the whole done column.
+    expect(sent[0].body).toEqual({ status: "done" });
   });
 
   it("shows board progress and the 7-day completed count", async () => {

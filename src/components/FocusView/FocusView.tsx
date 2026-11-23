@@ -5,10 +5,11 @@
 //   「X 件已逾期、Y 件今天到期 · 橫跨 Z 個看板」 (Z = distinct boards among those tasks); N = 0 →
 //   「今天沒有到期或逾期的任務」 only.
 // - Four groups (已逾期 / 今天到期 / 接下來 7 天 / 等待前置任務), each with its own empty sentence. A row:
-//   completion circle (aria-label 「標記完成：<標題>」 → move(task, 'done', null, null), i.e. the top of
-//   the done column, like the board's 「→」), title button (router.push('?task=<id>', { scroll:
-//   false }) opens the detail panel), priority dot, 進行中 mark, board name, relative due date. A
-//   blocked task cannot leave todo, so its row shows a lock instead of the circle.
+//   completion circle (aria-label 「標記完成：<標題>」 → update(task, { status: 'done' }), the same
+//   status-only update as the board's 「→」: the server puts it at the top of the done column without
+//   renumbering it), title button (router.push('?task=<id>', { scroll: false }) opens the detail
+//   panel), priority dot, 進行中 mark, board name, relative due date. A blocked task cannot leave
+//   todo, so its row shows a lock instead of the circle.
 // - Right column: 建議先處理 (pickSuggestion, button 「打開任務」), 看板進度 (done / total per board,
 //   non-deleted tasks), and 「過去 7 天完成」 (completedWithin).
 // - Loading → skeleton; a failed first load → 「無法載入資料，請重新整理頁面再試一次。」 (as BoardView).
@@ -93,7 +94,7 @@ export function FocusView() {
   } = view;
   const open = (task: Task) =>
     router.push(`?task=${task.id}`, { scroll: false });
-  const complete = (task: Task) => void cmds.move(task, "done", null, null);
+  const complete = (task: Task) => void cmds.update(task, { status: "done" });
 
   const section = (title: string, list: Task[], empty: string) => (
     <section className={styles.group} aria-label={title}>

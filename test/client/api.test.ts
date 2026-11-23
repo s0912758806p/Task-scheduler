@@ -133,6 +133,36 @@ describe('createTask / deleteTask (optimistic)', () => {
   });
 });
 
+describe('batchTasks', () => {
+  it('when a later chunk fails it rolls back, toasts, and refetches so applied chunks show', async () => {
+    // 501 ids → two requests: the first (500 ids, incl. a) is applied by the server, the second (b) fails.
+    const ids = ['a', ...Array.from({ length: 499 }, (_, i) => `gone-${i}`), 'b'];
+    let serverTasks = [A, B];
+    const batches: number[] = [];
+    const fetchMock = installFetch(async (req) => {
+      const r = route(req);
+      if (r === 'GET /api/tasks') return jsonResponse(serverTasks);
+      const body = (await req.json()) as { ids: string[] };
+      batches.push(body.ids.length);
+      if (batches.length === 2) return errorResponse(500, 'INTERNAL', '伺服器錯誤');
+      serverTasks = serverTasks.filter((t) => !body.ids.includes(t.id));
+      return jsonResponse({ updated: ['a'], skipped: [] });
+    });
+    const store = makeStore({ toast });
+    await store.dispatch(api.endpoints.getTasks.initiate());
+    const cached = () => api.endpoints.getTasks.select()(store.getState()).data;
+    const listCalls = () =>
+      fetchMock.mock.calls.filter(([req]) => route(req as Request) === 'GET /api/tasks').length;
+
+    await store.dispatch(api.endpoints.batchTasks.initiate({ ids, op: 'delete' }));
+
+    expect(batches).toEqual([500, 1]);
+    expect(toast).toHaveBeenCalledWith('伺服器錯誤');
+    await vi.waitFor(() => expect(listCalls()).toBe(2));
+    await vi.waitFor(() => expect(cached()?.map((t) => t.id)).toEqual(['b']));
+  });
+});
+
 describe('401 handling', () => {
   it('any endpoint answering 401 sends the browser to /login?next=<current path>', async () => {
     installFetch(() => errorResponse(401, 'UNAUTHENTICATED', '請先登入'));

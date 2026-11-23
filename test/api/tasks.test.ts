@@ -4,7 +4,9 @@ import { ApiError } from '@/server/errors';
 import { requireUser } from '@/server/auth';
 import type { DB } from '@/server/db';
 import { boards, tasks, user } from '@/server/db/schema';
+import { POSITION_STEP } from '@/lib/position';
 import { ensureDefaultBoard } from '@/server/services/boards';
+import { renumberColumn } from '@/server/services/tasks';
 import { closeTestDb, createTestDb, seedUser } from '../helpers/db';
 import { call } from '../helpers/route';
 import { GET, POST } from '../../app/api/tasks/route';
@@ -383,6 +385,33 @@ describe('PATCH /api/tasks/:id', () => {
       const r = await patch(moved, { status: 'done', position: null, insertAfterId: first });
       expect(r.body.status).toBe('done');
       expect(ids(await column('done'))).toEqual([first, moved, second]);
+    });
+
+    it('renumberColumn re-spaces only the live cards of that column to n × POSITION_STEP, ties by createdAt', async () => {
+      const t0 = new Date('2026-11-20T00:00:00.000Z');
+      const at = (s: number) => new Date(t0.getTime() + s * 1000);
+      const row = (title: string, position: number, created: Date, over: Partial<typeof tasks.$inferInsert> = {}) =>
+        h.db
+          .insert(tasks)
+          .values({ userId: a.id, boardId: aBoardId, title, position, createdAt: created, ...over })
+          .returning({ id: tasks.id })
+          .then(([r]) => r.id);
+      const later = await row('later', 5, at(2));
+      const earlier = await row('earlier', 5, at(1)); // same position, created first → goes first
+      const top = await row('top', -3, at(3));
+      const deleted = await row('deleted', 4, at(0), { deletedAt: at(9) });
+      const done = await row('done', 7, at(0), { status: 'done' });
+      const otherBoard = await row('other', 1, at(0), { boardId: aBoard2Id });
+
+      await renumberColumn(h.db, aBoardId, 'todo');
+
+      const pos = async (id: string) => (await dbRow(id)).position;
+      expect(await Promise.all([top, earlier, later].map(pos))).toEqual([
+        POSITION_STEP,
+        2 * POSITION_STEP,
+        3 * POSITION_STEP,
+      ]);
+      expect(await Promise.all([deleted, done, otherBoard].map(pos))).toEqual([4, 7, 1]);
     });
 
     it('rejects an insertAfterId that is not in the target column with 400', async () => {

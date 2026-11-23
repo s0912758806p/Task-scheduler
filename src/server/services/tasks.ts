@@ -31,10 +31,11 @@
 //   dependency cycles (a restored task keeps its old dependsOn; ids deleted meanwhile are ignored
 //   by the blocking rules).
 // - lockBoard, checkDependencies and toDbStatus are exported for importExport.ts.
-// - renumberColumn: re-spaces a column's non-deleted tasks by POSITION_STEP, keeping their order.
+// - renumberColumn: re-spaces a column's non-deleted tasks to n × POSITION_STEP (n = 1, 2, … in
+//   position, createdAt, id order) in a single UPDATE; soft-deleted rows keep their position.
 import { randomUUID } from 'node:crypto';
-import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
-import { POSITION_STEP, positionBetween, renumber } from '@/lib/position';
+import { and, asc, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
+import { POSITION_STEP, positionBetween } from '@/lib/position';
 import { indexById, openBlockers } from '@/lib/taskQueries';
 import type { Priority, Task, TaskStatus } from '@/lib/types';
 import type { BatchRequest, TaskCreateInput, TaskUpdateInput } from '@/lib/validation';
@@ -168,14 +169,20 @@ async function endPosition(db: DB, boardId: string, status: TaskStatus): Promise
 }
 
 export async function renumberColumn(db: DB, boardId: string, status: TaskStatus): Promise<void> {
-  const rows = await db
-    .select({ id: tasks.id })
+  // One UPDATE … FROM (SELECT id, row_number() OVER (…)) instead of a statement per card.
+  const ranked = db
+    .select({
+      id: tasks.id,
+      n: sql<number>`row_number() over (order by ${tasks.position}, ${tasks.createdAt}, ${tasks.id})`.as('n'),
+    })
     .from(tasks)
     .where(liveInColumn(boardId, status))
-    .orderBy(asc(tasks.position), asc(tasks.createdAt), asc(tasks.id));
-  for (const { id, position } of renumber(rows.map((r) => r.id))) {
-    await db.update(tasks).set({ position }).where(eq(tasks.id, id));
-  }
+    .as('ranked');
+  await db
+    .update(tasks)
+    .set({ position: sql`${ranked.n} * ${POSITION_STEP}` })
+    .from(ranked)
+    .where(eq(tasks.id, ranked.id));
 }
 
 /** Renumbers the target column, then returns the position right after `afterId` (null → top). */

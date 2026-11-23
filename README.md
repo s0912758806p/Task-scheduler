@@ -68,7 +68,7 @@
    - `BETTER_AUTH_URL`：`http://localhost:3000`
    - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`、`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`：第 3、4 步取得
 6. 建立資料表：`npm run db:migrate`。drizzle-kit 只讀 `.env`、不讀 `.env.local`，請先在 shell 設定 `DATABASE_URL`，例如 `export $(grep '^DATABASE_URL=' .env.local)`。
-7. 啟動：`npm run dev`，開啟 `http://localhost:3000`。未登入會被導向 `/login`；第一次登入會自動建立「我的看板」。
+7. 啟動：`npm run dev`，開啟 `http://localhost:3000`。未登入會被導向 `/login`（已登入再開 `/login` 會直接回到 `?next=` 指的頁面，預設今日焦點）；第一次登入會自動建立「我的看板」。
 8. 檢查：`npm test`（Vitest，用 PGlite，不需要資料庫）、`npx tsc --noEmit`、`npm run lint`、`npm run build`。
 
 帳號連結規則見下方「登入與帳號連結」。

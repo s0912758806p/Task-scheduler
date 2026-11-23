@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { api } from '@/client/api';
 import { makeStore } from '@/client/store';
 import { ThemeProvider } from '@/client/theme';
 import type { Notifications } from '@/client/useNotifications';
@@ -168,6 +169,29 @@ describe('Sidebar', () => {
 
     fireEvent.keyDown(input, { key: 'Enter' }); // the Enter after the composition saves it
     await waitFor(() => expect(writes).toEqual([`PATCH /api/boards/${PERSONAL}`]));
+  });
+
+  it('新增看板: Enter creates the board, which is in the boards cache before navigating to it', async () => {
+    const store = renderSidebar();
+    await screen.findByRole('link', { name: /我的看板/ });
+    let cachedAtPush: string[] | undefined;
+    push.mockImplementation(() => {
+      cachedAtPush = api.endpoints.getBoards.select()(store.getState()).data?.map((b) => b.id);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /新增看板/ }));
+    const input = await screen.findByRole('textbox', { name: '看板名稱' });
+    fireEvent.change(input, { target: { value: '新專案' } });
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 229, isComposing: false });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(writes).toEqual([]); // Safari's composition-confirming Enter creates nothing
+
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/b/${NEW_BOARD.id}`));
+    expect(writes).toEqual(['POST /api/boards']);
+    // BoardView looks the board up in this cache: without it, 「找不到這個看板」 flashes until the refetch.
+    expect(cachedAtPush).toEqual([MAIN, PERSONAL, NEW_BOARD.id]);
   });
 
   it('shows the email in the user menu as readable text, not a disabled item', async () => {

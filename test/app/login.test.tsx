@@ -6,11 +6,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 let socialImpl: (a: unknown) => Promise<unknown> = async () => ({ error: null });
 const social = vi.fn((a: unknown) => socialImpl(a));
 vi.mock('@/client/authClient', () => ({ signIn: { social: (a: unknown) => social(a), email: vi.fn() } }));
-vi.mock('@/server/auth', () => ({ isE2EAuthEnabled: () => false }));
+let sessionUser: { id: string; email: string; name: string; image: null } | null = null;
+vi.mock('@/server/auth', () => ({ isE2EAuthEnabled: () => false, getSessionUser: async () => sessionUser }));
 
 import LoginPage from '../../app/(auth)/login/page';
 
 beforeEach(() => {
+  sessionUser = null;
   social.mockClear();
   socialImpl = async () => ({ error: null });
 });
@@ -20,7 +22,28 @@ async function renderPage(error?: string | string[]) {
   render(await LoginPage({ searchParams: Promise.resolve({ error }) }));
 }
 
+/** Where Next's real redirect() (it throws NEXT_REDIRECT) sends a signed-in visitor, or null. */
+async function redirectTarget(next?: string): Promise<string | null> {
+  try {
+    await LoginPage({ searchParams: Promise.resolve({ next }) });
+    return null;
+  } catch (e) {
+    const digest = (e as { digest?: string }).digest ?? '';
+    if (!digest.startsWith('NEXT_REDIRECT')) throw e;
+    return digest.split(';')[2];
+  }
+}
+
 describe('/login', () => {
+  it('a signed-in visitor is redirected to the safe ?next= (else /focus) instead of seeing the form', async () => {
+    expect(await redirectTarget('/b/1?task=2')).toBeNull(); // signed out: the form renders
+    sessionUser = { id: 'u1', email: 'u@example.test', name: 'U', image: null };
+    expect(await redirectTarget('/b/1?task=2')).toBe('/b/1?task=2');
+    expect(await redirectTarget()).toBe('/focus');
+    expect(await redirectTarget('//evil.example')).toBe('/focus');
+    expect(await redirectTarget('/login?next=/login')).toBe('/focus'); // no redirect loop
+  });
+
   it('shows no error by default', async () => {
     await renderPage();
     expect(screen.queryByRole('alert')).toBeNull();
