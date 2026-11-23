@@ -1,8 +1,8 @@
 'use client';
 // useShortcuts(): the app's one document-level keydown listener (spec §9 「鍵盤」). Mounted by AppShell.
-// - Ignores events already handled (defaultPrevented), IME composition (isComposing / keyCode 229)
-//   and modified keys other than the ones below. It never handles Esc: the palette Modal and the
-//   detail panel (useEscapeToClose) each own theirs.
+// - Ignores events already handled (defaultPrevented), IME composition (isImeEnter: isComposing /
+//   keyCode 229) and modified keys other than the ones below. It never handles Esc: the palette
+//   Modal and the detail panel (useEscapeToClose) each own theirs.
 // - In an editable target (input / textarea / select / contenteditable) only ⌘K / Ctrl+K works.
 //   ⌘Z / ⌘⇧Z / Ctrl+Y are left to the browser's own text undo there; elsewhere they call useUndo().
 // - Single keys also stay quiet while the palette or the 快捷鍵 dialog is open.
@@ -11,6 +11,7 @@
 //   G then F within 1 s → /focus; ? → 快捷鍵 dialog.
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { isImeEnter } from '@/lib/ime';
 import { useGetBoardsQuery } from './api';
 import { useAppStore } from './store';
 import { setFilterOpen, setPaletteOpen, setShortcutsOpen } from './uiSlice';
@@ -42,7 +43,7 @@ export function useShortcuts() {
   useEffect(() => {
     let lastG = 0;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.isComposing || e.keyCode === 229) return;
+      if (e.defaultPrevented || isImeEnter(e)) return;
       const { router, pathname, undo, redo, boards } = latest.current;
       const { dispatch } = store;
       const key = e.key.toLowerCase();

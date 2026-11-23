@@ -1,9 +1,11 @@
 'use client';
 // 新增看板 dialog: name input (1–60 chars after trimming); 建立 / Enter creates the board and calls
-// onCreated with it. Errors are toasted by the API layer and leave the dialog open.
+// onCreated with it (the Enter that confirms an IME composition is ignored: isImeEnter). Errors are
+// toasted by the API layer and leave the dialog open.
 import { Input, Modal } from 'antd';
 import { useState } from 'react';
 import { useCreateBoardMutation } from '@/client/api';
+import { isImeEnter } from '@/lib/ime';
 import { BOARD_NAME_MAX } from '@/lib/validation';
 import type { Board } from '@/lib/types';
 
@@ -53,7 +55,9 @@ export function NewBoardModal({
         maxLength={BOARD_NAME_MAX}
         autoFocus
         onChange={(e) => setName(e.target.value)}
-        onPressEnter={() => void submit()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !isImeEnter(e)) void submit();
+        }}
       />
     </Modal>
   );

@@ -328,6 +328,24 @@ describe('PATCH /api/tasks/:id', () => {
       }
       expect((await dbRow(t)).dependsOn).toEqual([]);
     });
+
+    it('editing the prerequisites after one was soft-deleted: re-sending it is refused, omitting it saves', async () => {
+      const gone = await mk('gone');
+      const live = await mk('live');
+      const extra = await mk('extra');
+      const t = await mk('t', { dependsOn: [gone, live] });
+      await del(gone);
+
+      // The old client kept ids its picker could not show and sent them back: the server refuses.
+      const resent = await patch(t, { dependsOn: [live, extra, gone] });
+      expect(resent.status).toBe(400);
+      expect(resent.body.error).toMatchObject({ code: 'INVALID_DEPENDENCY', details: { invalid: [gone] } });
+
+      // What the picker sends now — only live tasks of the board — is accepted.
+      const r = await patch(t, { dependsOn: [live, extra] });
+      expect(r.status).toBe(200);
+      expect((await dbRow(t)).dependsOn).toEqual([live, extra]);
+    });
   });
 
   describe('position: null (renumber the column)', () => {

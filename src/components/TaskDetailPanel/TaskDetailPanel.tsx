@@ -13,8 +13,10 @@
 //   An id that is not in the cache (deleted, wrong URL) → 「找不到這筆任務」 + 關閉.
 // - Create (`taskId === 'new'`): same layout on a local draft (status todo, priority 2), title
 //   focused. 建立, ⌘/Ctrl+Enter, or Enter in the title → create({ boardId, … }); an empty title shows
-//   「請輸入任務名稱」 and creates nothing. With an open prerequisite selected only 待處理 is allowed
-//   (the server would answer 409 TASK_BLOCKED). On success the URL becomes `?task=<new id>`.
+//   「請輸入任務名稱」 and creates nothing. The Enter that confirms an IME composition (isImeEnter,
+//   Safari's keyCode 229 included) is ignored in the title and for ⌘/Ctrl+Enter. With an open
+//   prerequisite selected only 待處理 is allowed (the server would answer 409 TASK_BLOCKED). On
+//   success the URL becomes `?task=<new id>`.
 // - Esc closes when pressed inside the panel (its inputs too) or outside any input elsewhere on the
 //   page — not from another input (QuickAdd, rename) or while closing a Select/DatePicker dropdown.
 // Server refusals (409 DEPENDENCY_CYCLE, 400, …) are toasted by the API layer, which also rolls the
@@ -25,6 +27,7 @@ import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { useGetTasksQuery } from '@/client/api';
 import { STATUS_LABEL, useTaskCommands } from '@/client/commands';
 import { IconClose, IconTrash } from '@/components/icons';
+import { isImeEnter } from '@/lib/ime';
 import { indexById, openBlockers } from '@/lib/taskQueries';
 import type { Priority, Subtask, Task, TaskStatus } from '@/lib/types';
 import { cleanTitle, DESCRIPTION_MAX, TITLE_MAX } from '@/lib/validation';
@@ -228,7 +231,7 @@ function CreateTask({ boardId, list, onClose, onPopupChange }: ModeProps & { boa
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !e.nativeEvent.isComposing) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !isImeEnter(e)) {
       e.preventDefault();
       void submit();
     }
@@ -363,7 +366,7 @@ function TitleInput(
         onBlur={props.onBlur}
         onKeyDown={(e) => {
           // Titles have no line breaks: Enter commits (edit) or creates (new).
-          if (e.key !== 'Enter' || e.nativeEvent.isComposing || e.metaKey || e.ctrlKey) return;
+          if (e.key !== 'Enter' || isImeEnter(e) || e.metaKey || e.ctrlKey) return;
           e.preventDefault();
           props.onEnter(e.currentTarget);
         }}

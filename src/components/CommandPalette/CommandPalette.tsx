@@ -4,7 +4,8 @@
 // tag contains the query, case-insensitive; empty query → the 3 most recently updated, otherwise up to
 // 6; meta `<看板名> · <狀態>`) and 「動作」 (新增任務, 前往今日焦點, 切換主題, 匯出／匯入目前看板,
 // 開啟到期提醒, 復原, 切換到「<看板>」看板 per board; the query filters them by label).
-// ↑/↓ move the highlight, hover moves it, Enter runs it, Esc is the Modal's own. Enter on a task opens
+// ↑/↓ move the highlight, hover moves it, Enter runs it, Esc is the Modal's own; keys of an IME
+// composition (isImeEnter, Safari's keyCode-229 Enter included) are ignored. Enter on a task opens
 // `/b/<boardId>?task=<id>`. No match at all → 「找不到「q」— 按 ↵ 直接建立成新任務」 and Enter creates
 // the task from parseQuickAdd(q, today) on the current board (/focus: the first board) and opens it.
 // 匯出／匯入目前看板 and 開啟到期提醒 call `onExportImport` (opens the DataMenu dialog; disabled on /focus, which has no current
@@ -19,6 +20,7 @@ import { useThemePreference } from '@/client/theme';
 import { setPaletteOpen } from '@/client/uiSlice';
 import { useUndo } from '@/client/undo';
 import { useToday } from '@/client/useToday';
+import { isImeEnter } from '@/lib/ime';
 import { parseQuickAdd } from '@/lib/quickAddParser';
 import { nextTheme } from '@/lib/theme';
 import styles from './CommandPalette.module.scss';
@@ -138,7 +140,7 @@ function PaletteBody({ onExportImport, onReminders }: CommandPaletteProps) {
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+    if (isImeEnter(e)) return;
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
       if (items.length === 0) return;

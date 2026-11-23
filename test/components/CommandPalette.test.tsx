@@ -134,6 +134,15 @@ describe('CommandPalette', () => {
     expect(screen.getByText('整理桌面')).toBeTruthy();
   });
 
+  it("ignores Safari's composition-confirming Enter (isComposing false, keyCode 229)", async () => {
+    renderPalette();
+    await screen.findByText('撰寫 API 規格文件');
+    fireEvent.keyDown(input(), { key: 'Enter', keyCode: 229, isComposing: false });
+    expect(push).not.toHaveBeenCalled();
+    fireEvent.keyDown(input(), { key: 'Enter' });
+    expect(push).toHaveBeenCalledWith(`/b/${MAIN}?task=t1`);
+  });
+
   it('arrow keys move one highlight across both groups and hover moves it', async () => {
     renderPalette();
     await screen.findByText('撰寫 API 規格文件');

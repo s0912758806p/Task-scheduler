@@ -38,18 +38,44 @@ function renderBanner() {
   return toaster;
 }
 
-const legacyBoards = [
-  { id: 'default', name: '我的看板' },
-  { id: 'b2', name: '個人' },
-];
-const legacyTasks = [{ id: '1', title: 'a' }, { id: '2', title: 'b' }, { id: '3', title: 'c' }];
+// The old Vite app's real shapes: boardSlice persisted `{ boards, activeBoardId }` under
+// taskSchedulerBoards (git show a4cd36b:src/store/boardSlice.ts) and the task array under
+// taskSchedulerTasks_v3.
+const legacyBoards = {
+  boards: [
+    { id: 'default', name: '我的看板', createdAt: 0 },
+    { id: 'b2', name: '個人', createdAt: 1732300000000 },
+    { id: 'b3', name: '副業', createdAt: 1732300500000 },
+  ],
+  activeBoardId: 'b2',
+};
+const legacyTasks = Array.from({ length: 10 }, (_, i) => ({
+  id: String(i + 1),
+  title: `任務 ${i + 1}`,
+  status: 'todo',
+  priority: 2,
+  boardId: ['default', 'b2', 'b3'][i % 3],
+  createdAt: 1732300000000 + i,
+}));
 
 describe('LegacyImportBanner', () => {
   it('shows the board and task counts of the old localStorage data', async () => {
     localStorage.setItem('taskSchedulerBoards', JSON.stringify(legacyBoards));
     localStorage.setItem('taskSchedulerTasks_v3', JSON.stringify(legacyTasks));
     renderBanner();
-    expect(await screen.findByText('發現這台裝置上的舊資料（2 個看板、3 筆任務）')).toBeTruthy();
+    expect(await screen.findByText('發現這台裝置上的舊資料（3 個看板、10 筆任務）')).toBeTruthy();
+  });
+
+  it('still counts a bare board array, and tasks without a boards key as one default board', async () => {
+    localStorage.setItem('taskSchedulerBoards', JSON.stringify(legacyBoards.boards.slice(0, 2)));
+    localStorage.setItem('taskSchedulerTasks_v3', JSON.stringify(legacyTasks));
+    renderBanner();
+    expect(await screen.findByText('發現這台裝置上的舊資料（2 個看板、10 筆任務）')).toBeTruthy();
+    cleanup();
+
+    localStorage.removeItem('taskSchedulerBoards');
+    renderBanner();
+    expect(await screen.findByText('發現這台裝置上的舊資料（1 個看板、10 筆任務）')).toBeTruthy();
   });
 
   it('shows nothing without old data, with corrupt JSON, or once migrated', async () => {

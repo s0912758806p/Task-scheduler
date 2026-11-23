@@ -1,13 +1,15 @@
 'use client';
 // One board row in the sidebar: link to /b/<id> with its open-task count. Double-click the name to
-// rename inline (Enter / blur saves a changed, non-empty name; Esc cancels, with preventDefault so it
-// does not also close the detail panel). Right-click the row or press ⋯ for the menu: 重新命名 /
-// 刪除看板 (the delete confirmation lives in Sidebar).
+// rename inline (Enter / blur saves a changed, non-empty name — the Enter that confirms an IME
+// composition is ignored (isImeEnter); Esc cancels, with preventDefault so it does not also close the
+// detail panel). Right-click the row or press ⋯ for the menu: 重新命名 / 刪除看板 (the delete
+// confirmation lives in Sidebar).
 import { Dropdown, type MenuProps } from 'antd';
 import Link from 'next/link';
 import { useState, type KeyboardEvent } from 'react';
 import { useUpdateBoardMutation } from '@/client/api';
 import { IconBoard, IconMore } from '@/components/icons';
+import { isImeEnter } from '@/lib/ime';
 import { BOARD_NAME_MAX } from '@/lib/validation';
 import type { Board } from '@/lib/types';
 import styles from './Sidebar.module.scss';
@@ -45,7 +47,7 @@ export function BoardItem({
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') commit(e.currentTarget.value);
+    if (e.key === 'Enter' && !isImeEnter(e)) commit(e.currentTarget.value);
     if (e.key === 'Escape') {
       e.preventDefault(); // cancels the rename only, not the detail panel
       setEditing(false);

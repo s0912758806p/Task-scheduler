@@ -2,11 +2,12 @@
 // 子任務 section of the detail panel (spec §9 「詳情欄」): progress 「done / total」, one row per
 // subtask (checkbox labelled with its title, 「刪除子任務：<標題>」 button) and an input
 // 「新增子任務」 that adds on Enter (title cleaned like a task title; empty ignored; the Enter that
-// confirms an IME composition ignored). New ids come from crypto.randomUUID(). Every change hands
-// the whole new list to onChange — the panel sends it as one update. At SUBTASKS_MAX the input is
-// disabled. Drag-to-reorder is deferred (spec allows it).
+// confirms an IME composition — isImeEnter, Safari's keyCode 229 included — ignored). New ids come
+// from crypto.randomUUID(). Every change hands the whole new list to onChange — the panel sends it
+// as one update. At SUBTASKS_MAX the input is disabled. Drag-to-reorder is deferred (spec allows it).
 import { useState } from 'react';
 import { IconClose, IconPlus } from '@/components/icons';
+import { isImeEnter } from '@/lib/ime';
 import type { Subtask } from '@/lib/types';
 import { cleanTitle, SUBTASKS_MAX, TITLE_MAX } from '@/lib/validation';
 import styles from './TaskDetailPanel.module.scss';
@@ -17,7 +18,7 @@ export function SubtaskList({ subtasks, onChange }: { subtasks: Subtask[]; onCha
   const full = subtasks.length >= SUBTASKS_MAX;
 
   function add(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== 'Enter' || e.nativeEvent.isComposing || e.metaKey || e.ctrlKey) return;
+    if (e.key !== 'Enter' || isImeEnter(e) || e.metaKey || e.ctrlKey) return;
     e.preventDefault();
     const title = cleanTitle(text);
     if (!title || full) return;

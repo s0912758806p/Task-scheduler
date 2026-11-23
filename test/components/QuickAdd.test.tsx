@@ -54,6 +54,19 @@ describe('QuickAdd', () => {
     expect(onCreate).not.toHaveBeenCalled();
   });
 
+  it("ignores Safari's composition-confirming Enter (isComposing false, keyCode 229)", () => {
+    const { onCreate, input } = setup();
+
+    fireEvent.change(input, { target: { value: '修 bug' } });
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 229, isComposing: false });
+
+    expect(onCreate).not.toHaveBeenCalled();
+    expect(input.value).toBe('修 bug');
+
+    fireEvent.keyDown(input, { key: 'Enter' }); // the Enter after the composition creates it
+    expect(onCreate).toHaveBeenCalledTimes(1);
+  });
+
   it('Esc clears the input and claims the key (preventDefault)', () => {
     const { input } = setup();
 

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeStore } from '@/client/store';
@@ -16,9 +16,10 @@ const MAIN = '3c7e1a52-0f4b-4d8e-9a61-7b2c5d8e4f10';
 const PERSONAL = '9d2f6b81-5c3a-4e7f-8b10-2a4c6e8d0f21';
 
 let pathname = `/b/${MAIN}`;
+const push = vi.fn();
 vi.mock('next/navigation', () => ({
   usePathname: () => pathname,
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ push, replace: vi.fn(), refresh: vi.fn() }),
 }));
 vi.mock('@/client/authClient', () => ({ signOut: vi.fn() }));
 
@@ -59,15 +60,31 @@ const tasks: Task[] = [
   task('p2', PERSONAL, {}),
 ];
 
+const NEW_BOARD: Board = {
+  id: '5e8a1c40-7b2d-4f6e-9c31-0d4b6a8e2f53',
+  name: '新專案',
+  position: 3072,
+  createdAt: '2026-11-23T00:00:00.000Z',
+  openCount: 0,
+};
+/** Non-GET requests the fake server received. */
+let writes: string[];
+
 beforeEach(() => {
   pathname = `/b/${MAIN}`;
+  push.mockReset();
+  writes = [];
   stubBrowserApis();
   installFetch((req) => {
-    switch (route(req)) {
+    const r = route(req);
+    if (req.method !== 'GET') writes.push(r);
+    switch (r) {
       case 'GET /api/boards':
         return jsonResponse(boards);
       case 'GET /api/tasks':
         return jsonResponse(tasks);
+      case 'POST /api/boards':
+        return jsonResponse(NEW_BOARD, 201);
       default:
         return jsonResponse({ error: { code: 'NOT_FOUND', message: 'x' } }, 404);
     }
@@ -135,6 +152,22 @@ describe('Sidebar', () => {
     expect(notPrevented).toBe(false);
     expect(screen.queryByRole('textbox', { name: '看板名稱' })).toBeNull();
     expect(screen.getByRole('link', { name: /個人專案/ })).toBeTruthy();
+  });
+
+  it("Safari's composition-confirming Enter (isComposing false, keyCode 229) does not commit the rename", async () => {
+    renderSidebar();
+    fireEvent.doubleClick(await screen.findByRole('link', { name: /個人專案/ }));
+    const input = screen.getByRole('textbox', { name: '看板名稱' });
+    fireEvent.change(input, { target: { value: '副業' } });
+
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 229, isComposing: false });
+
+    expect(screen.getByRole('textbox', { name: '看板名稱' })).toBe(input);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(writes).toEqual([]);
+
+    fireEvent.keyDown(input, { key: 'Enter' }); // the Enter after the composition saves it
+    await waitFor(() => expect(writes).toEqual([`PATCH /api/boards/${PERSONAL}`]));
   });
 
   it('shows the email in the user menu as readable text, not a disabled item', async () => {

@@ -2,6 +2,9 @@
 // One-time migration banner (spec §8). Shown at the top of every signed-in page (AppShell mounts it
 // once) when this browser's localStorage still holds the old app's `taskSchedulerTasks_v3` and/or
 // `taskSchedulerBoards` and `taskSchedulerMigrated` is not set. Corrupt JSON counts as no data.
+// The old app stored taskSchedulerBoards as `{ boards: [...], activeBoardId }`; the banner counts
+// `boards.boards` (a bare array is tolerated too), and tasks without any boards list count as the
+// old implicit default board.
 // - 匯入: POST /api/import/local with the parsed old values and the browser time zone, then writes
 //   `taskSchedulerMigrated=1` and toasts 「已匯入 N 筆舊任務」. A failure keeps the banner (the API
 //   layer already toasted the reason).
@@ -47,6 +50,13 @@ function snapshot(): string | null {
 const subscribeNever = () => () => {};
 const serverSnapshot = () => null;
 
+/** The old app's board list: `{ boards: [...], activeBoardId }` as it persisted it, or a bare array. */
+function legacyBoardList(raw: unknown): unknown[] | null {
+  if (Array.isArray(raw)) return raw;
+  const inner = typeof raw === 'object' && raw !== null ? (raw as { boards?: unknown }).boards : undefined;
+  return Array.isArray(inner) ? inner : null;
+}
+
 function readLegacy(): Legacy | null {
   try {
     if (localStorage.getItem(MIGRATED_KEY) !== null) return null;
@@ -57,7 +67,8 @@ function readLegacy(): Legacy | null {
   const tasks = readJson(TASKS_KEY);
   const taskCount = Array.isArray(tasks) ? tasks.length : 0;
   // Tasks without a boards list live in the old app's implicit default board.
-  const boardCount = Array.isArray(boards) ? boards.length : taskCount > 0 ? 1 : 0;
+  const list = legacyBoardList(boards);
+  const boardCount = list ? list.length : taskCount > 0 ? 1 : 0;
   if (boardCount === 0 && taskCount === 0) return null;
   return { boards, tasks, boardCount, taskCount };
 }

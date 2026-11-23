@@ -1,10 +1,12 @@
 // Quick-add box at the top of a column (spec §9 「智慧快速新增」). The input is parsed live with
 // parseQuickAdd(value, today); while it yields chips they are shown with 「↵ 新增」.
 // Enter → onCreate({ title, priority (default 2), tags, dueDate, status }) and the box clears; an
-// empty title does nothing. The Enter that confirms an IME composition is ignored. Esc clears (and
-// prevents its default, so it does not also close the detail panel).
+// empty title does nothing. The Enter that confirms an IME composition is ignored (isImeEnter,
+// Safari's keyCode 229 included). Esc clears (and prevents its default, so it does not also close
+// the detail panel).
 import { useState } from 'react';
 import { IconPlus } from '@/components/icons';
+import { isImeEnter } from '@/lib/ime';
 import { parseQuickAdd } from '@/lib/quickAddParser';
 import type { Priority, TaskStatus } from '@/lib/types';
 import styles from './QuickAdd.module.scss';
@@ -35,7 +37,7 @@ export function QuickAdd({ status, label, today, onCreate }: QuickAddProps) {
       setValue('');
       return;
     }
-    if (e.key !== 'Enter' || e.nativeEvent.isComposing || !parsed?.title) return;
+    if (e.key !== 'Enter' || isImeEnter(e) || !parsed?.title) return;
     e.preventDefault();
     onCreate({
       title: parsed.title,

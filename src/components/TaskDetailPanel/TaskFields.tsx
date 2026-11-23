@@ -3,9 +3,11 @@
 // 截止日 (DatePicker; the value is a YYYY-MM-DD string both ways, read and written as a local
 // calendar day by dayjs), 標籤 (Select mode="tags", suggestions = the board's tags; trimmed and
 // de-duplicated with cleanTags), 前置任務 (Select mode="multiple": the board's other non-deleted
-// tasks, done ones prefixed 「✓ 」; ids the list cannot show — e.g. soft-deleted prerequisites — are
-// kept when the selection changes) and, for an existing task, 建立時間. Each change goes to
-// onChange as a partial patch; whether that is a server update or a draft is the panel's business.
+// tasks, done ones prefixed 「✓ 」; the value is only those live tasks — an id the list cannot show,
+// e.g. a soft-deleted prerequisite, is not displayed and is dropped by the next change, because the
+// server refuses non-live prerequisites with 400 INVALID_DEPENDENCY) and, for an existing task,
+// 建立時間. Each change goes to onChange as a partial patch; whether that is a server update or a
+// draft is the panel's business.
 // Popup open/close is reported through onPopupChange so Esc closes the dropdown, not the panel.
 import { DatePicker, Select } from 'antd';
 import dayjs from 'dayjs';
@@ -46,7 +48,6 @@ export function TaskFields(props: TaskFieldsProps) {
     .map((t) => ({ value: t.id, label: `${t.status === 'done' ? '✓ ' : ''}${t.title}` }));
   const listed = new Set(depOptions.map((o) => o.value));
   const shownDeps = props.dependsOn.filter((d) => listed.has(d));
-  const hiddenDeps = props.dependsOn.filter((d) => !listed.has(d));
   const tagOptions = [...new Set(boardTasks.flatMap((t) => t.tags))]
     .sort((a, b) => a.localeCompare(b))
     .map((t) => ({ value: t, label: t }));
@@ -119,7 +120,7 @@ export function TaskFields(props: TaskFieldsProps) {
           options={depOptions}
           optionFilterProp="label"
           virtual={false}
-          onChange={(ids: string[]) => onChange({ dependsOn: [...ids, ...hiddenDeps] })}
+          onChange={(dependsOn: string[]) => onChange({ dependsOn })}
           onOpenChange={(open) => onPopupChange('deps', open)}
         />
       </div>

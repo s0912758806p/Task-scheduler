@@ -6,7 +6,10 @@ import { makeStore } from '@/client/store';
 import { createToaster, UndoProvider } from '@/client/undo';
 import { TaskDetailPanel } from '@/components/TaskDetailPanel/TaskDetailPanel';
 import { todayISO } from '@/lib/dates';
+import { indexById } from '@/lib/taskQueries';
 import type { Task } from '@/lib/types';
+import { ApiError } from '@/server/errors';
+import { checkDependencies } from '@/server/services/tasks';
 import { stubBrowserApis } from '../helpers/dom';
 import { errorResponse, installFetch, jsonResponse, route } from '../helpers/fetch';
 import { BOARD_ID, sampleTasksAsTasks } from '../fixtures/tasks';
@@ -44,6 +47,16 @@ beforeEach(() => {
       const patch = body as Partial<Task>;
       if (patch.dependsOn?.includes(CYCLE_ID)) {
         return errorResponse(409, 'DEPENDENCY_CYCLE', '前置任務不能形成循環');
+      }
+      if (patch.dependsOn) {
+        // The server's real rule: prerequisites must be live (listed) tasks of the same board.
+        const self = tasks.find((t) => t.id === id)!;
+        try {
+          checkDependencies(id, patch.dependsOn, indexById(tasks.filter((t) => t.boardId === self.boardId)));
+        } catch (e) {
+          if (!(e instanceof ApiError)) throw e;
+          return errorResponse(e.status, e.code, e.message);
+        }
       }
       return jsonResponse({ ...tasks.find((t) => t.id === id)!, ...patch });
     }
@@ -108,6 +121,21 @@ describe('TaskDetailPanel — edit', () => {
     expect(subtasks).toHaveLength(3);
     expect(subtasks.every((s) => s.done)).toBe(true);
     expect(await screen.findByText('3 / 3')).toBeTruthy();
+  });
+
+  it("Safari's composition-confirming Enter (isComposing false, keyCode 229) adds no subtask", async () => {
+    renderPanel('sample-2');
+    const input = await screen.findByRole('textbox', { name: '新增子任務' });
+
+    fireEvent.change(input, { target: { value: '寫範例' } });
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 229, isComposing: false });
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(sent).toEqual([]);
+    expect((input as HTMLInputElement).value).toBe('寫範例');
+
+    fireEvent.keyDown(input, { key: 'Enter' }); // the Enter after the composition adds it
+    await waitFor(() => expect(sent).toHaveLength(1));
   });
 
   it('adds a subtask with Enter and deletes one, each as one PATCH', async () => {
@@ -270,6 +298,21 @@ describe('TaskDetailPanel — edit', () => {
     await waitFor(() => expect(within(selector as HTMLElement).queryByTitle(cycleTitle)).toBeNull());
   });
 
+  it('editing 前置任務 after a prerequisite was soft-deleted sends only live ids, which the server rule accepts', async () => {
+    // sample-2 depended on a task that has since been soft-deleted: GET /api/tasks no longer lists it.
+    tasks[1].dependsOn = ['deleted-prereq'];
+    const { toaster } = renderPanel('sample-2');
+
+    fireEvent.mouseDown(await screen.findByRole('combobox', { name: '前置任務' }));
+    fireEvent.click(await screen.findByRole('option', { name: '完成專案需求分析' }));
+
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0].body).toEqual({ dependsOn: ['sample-1'] });
+    // The fake server runs checkDependencies, so a re-sent hidden id would come back as a 400 toast.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(toaster.get()).toBeNull();
+  });
+
   it('an unknown or deleted task says 「找不到這筆任務」 with a close button', async () => {
     const { onClose } = renderPanel('no-such-task');
 
@@ -305,6 +348,22 @@ describe('TaskDetailPanel — create (?task=new)', () => {
     const body = sent[0].body as Task;
     expect(body).toMatchObject({ boardId: BOARD_ID, title: '修 bug', status: 'todo', priority: 2 });
     expect(replace).toHaveBeenCalledWith(`?task=${body.id}`, { scroll: false });
+  });
+
+  it("Safari's composition-confirming Enter (isComposing false, keyCode 229) in the title creates nothing", async () => {
+    renderPanel('new');
+    const box = await titleBox();
+
+    fireEvent.change(box, { target: { value: '修 bug' } });
+    fireEvent.keyDown(box, { key: 'Enter', keyCode: 229, isComposing: false });
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(sent).toEqual([]);
+    expect(replace).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(box, { key: 'Enter' }); // the Enter after the composition creates it
+    await waitFor(() => expect(replace).toHaveBeenCalled());
+    expect(sent.map((s) => s.route)).toEqual(['POST /api/tasks']);
   });
 
   it('with an open prerequisite selected only 待處理 is allowed', async () => {
