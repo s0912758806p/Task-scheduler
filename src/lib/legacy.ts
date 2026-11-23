@@ -127,7 +127,7 @@ function normalizeRow(
 
   let dueDate: string | null = null;
   if (raw.dueDate !== undefined && raw.dueDate !== null) {
-    if (legacy && typeof raw.dueDate === 'number' && Number.isFinite(raw.dueDate)) {
+    if (legacy && typeof raw.dueDate === 'number' && !Number.isNaN(new Date(raw.dueDate).getTime())) {
       dueDate = msToLocalISO(raw.dueDate, timeZone);
     } else if (!legacy && isISODate(raw.dueDate)) {
       dueDate = raw.dueDate;
@@ -177,8 +177,17 @@ function withPositions(tasks: Array<Omit<ImportTask, 'position'>>): ImportTask[]
   return tasks.map((t, i) => ({ ...t, position: pos[i].position }));
 }
 
+function assertTimeZone(timeZone: string): void {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone });
+  } catch {
+    throw new ApiError(400, 'INVALID_TIME_ZONE', '時區無效');
+  }
+}
+
 /** Accepts a v2 export object or the old app's plain array. */
 export function normalizeImportFile(raw: unknown, timeZone: string): NormalizedImport {
+  assertTimeZone(timeZone);
   const warnings: string[] = [];
   let rows: unknown[];
   let legacy: boolean;
@@ -203,6 +212,7 @@ export function normalizeLocalStorage(
   boards: Array<{ sourceId: string; name: string }>;
   tasksByBoard: Record<string, NormalizedImport>;
 } {
+  assertTimeZone(timeZone);
   const boards: Array<{ sourceId: string; name: string }> = [];
   const list = isRec(raw.boards) && Array.isArray(raw.boards.boards) ? raw.boards.boards : [];
   for (const b of list) {

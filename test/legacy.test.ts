@@ -65,6 +65,23 @@ describe('normalizeImportFile (legacy array)', () => {
   });
 });
 
+describe('robustness', () => {
+  it('treats out-of-range ms values as invalid instead of throwing', () => {
+    const r = normalizeImportFile([{ ...base, id: '1', title: 'x', dueDate: 1e20, createdAt: 1e20 }], TZ);
+    expect(r.tasks[0].dueDate).toBeNull();
+    expect(r.warnings).toEqual(['第 1 筆：到期日無效，已清除']);
+    expect(Number.isNaN(Date.parse(r.tasks[0].createdAt))).toBe(false);
+  });
+  it('rejects an invalid time zone with INVALID_TIME_ZONE', () => {
+    expect(() => normalizeImportFile([], 'Mars/Olympus')).toThrowError(
+      expect.objectContaining({ status: 400, code: 'INVALID_TIME_ZONE' }),
+    );
+    expect(() => normalizeLocalStorage({ boards: null, tasks: [] }, 'Mars/Olympus')).toThrowError(
+      expect.objectContaining({ code: 'INVALID_TIME_ZONE' }),
+    );
+  });
+});
+
 describe('normalizeImportFile (v2)', () => {
   const fixture = {
     format: 'task-scheduler',
