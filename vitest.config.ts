@@ -13,6 +13,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['test/**/*.test.{ts,tsx}'],
+    exclude: ['e2e/**', 'node_modules/**'],
     hookTimeout: 60_000,
     testTimeout: 30_000,
   },

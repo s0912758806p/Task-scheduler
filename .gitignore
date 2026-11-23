@@ -31,3 +31,5 @@ next-env.d.ts
 playwright-report/
 test-results/
 *.tsbuildinfo
+
+e2e/.auth/
