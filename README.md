@@ -56,7 +56,7 @@ A modern Kanban-style task management app built with React and TypeScript. Suppo
 6. 建立資料表：`npm run db:migrate`。drizzle-kit 只讀 `.env`、不讀 `.env.local`，請先在 shell 設定 `DATABASE_URL`，例如 `export $(grep '^DATABASE_URL=' .env.local)`。
 7. 啟動：`npm run dev`，開啟 `http://localhost:3000`。未登入會被導向 `/login`；第一次登入會自動建立「我的看板」。
 
-GitHub 與 Google 回報相同且已驗證的 email 時，視為同一個使用者。
+GitHub 與 Google 回報相同的 email、且兩邊都標示為已驗證時，視為同一個使用者（同一份看板）。任一邊未驗證時不會連結；因為 email 在使用者表中唯一，也不會另建第二個帳號——這次登入會失敗，Better Auth 導向它的錯誤頁（`/api/auth/error?error=account_not_linked`）。
 
 ## Usage
 

@@ -1,6 +1,10 @@
 // Better Auth setup (spec §8).
-// - buildAuthOptions(env, db): pure option builder. GitHub + Google OAuth from env; accounts with
-//   the same verified email are linked (trustedProviders github/google); email/password is enabled
+// - buildAuthOptions(env, db): pure option builder. GitHub + Google OAuth from env. Implicit
+//   account linking is on but no provider is "trusted": a new GitHub/Google identity joins an
+//   existing user only when the provider reports the email as verified AND the existing user's
+//   email is verified (Better Auth's requireLocalEmailVerified default). Otherwise Better Auth
+//   refuses the sign-in (account_not_linked; user.email is unique, so no second user is created).
+//   Email/password is enabled
 //   only when NODE_ENV !== 'production' AND E2E_AUTH=1 (Playwright login), never in production;
 //   every newly created user gets an empty 「我的看板」 via the user.create.after hook; the
 //   nextCookies() plugin (must stay last) lets server actions/components set session cookies.
@@ -43,7 +47,8 @@ export function buildAuthOptions(env: NodeJS.ProcessEnv, db: DB): BetterAuthOpti
       },
     },
     account: {
-      accountLinking: { enabled: true, trustedProviders: ['github', 'google'] },
+      // No trustedProviders: trusting a provider skips its email_verified check when linking.
+      accountLinking: { enabled: true },
     },
     emailAndPassword: { enabled: isE2EAuthEnabled(env) },
     databaseHooks: {

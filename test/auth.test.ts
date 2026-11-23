@@ -39,10 +39,14 @@ describe('buildAuthOptions', () => {
     ).toBe(false);
   });
 
-  it('links GitHub and Google accounts with the same verified email', () => {
-    const options = buildAuthOptions({ ...baseEnv, NODE_ENV: 'production' }, db);
-    expect(options.account?.accountLinking?.enabled).toBe(true);
-    expect(options.account?.accountLinking?.trustedProviders).toEqual(['github', 'google']);
+  it('links accounts only on verified emails: linking on, no trusted providers', () => {
+    const linking = buildAuthOptions({ ...baseEnv, NODE_ENV: 'production' }, db).account
+      ?.accountLinking;
+    expect(linking?.enabled).toBe(true);
+    // A trusted provider bypasses its own email_verified check, so none may be listed.
+    expect(linking?.trustedProviders).toBeUndefined();
+    // Default (true) also requires the existing user's email to be verified; never override it.
+    expect(linking?.requireLocalEmailVerified).toBeUndefined();
   });
 
   it('reads the OAuth credentials, secret and base URL from the given env', () => {
@@ -104,6 +108,11 @@ describe('safeNextPath', () => {
     ['//evil.example'],
     ['/\\evil.example'],
     ['https://evil.example/'],
+    ['/\t/evil.example'],
+    ['/a\\b'],
+    ['/%2F%2Fevil.example'],
+    ['/%5cevil'],
+    ['/\n/evil.example'],
   ])('falls back to /focus for %j', (raw) => {
     expect(safeNextPath(raw)).toBe('/focus');
   });
