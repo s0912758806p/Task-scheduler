@@ -11,6 +11,12 @@ function cmd(label: string, undo: () => Promise<void> = async () => {}): Command
   return { label, undo: vi.fn(undo), redo: vi.fn(async () => {}) };
 }
 
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((r) => (resolve = r));
+  return { promise, resolve };
+}
+
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
@@ -59,6 +65,72 @@ describe('createUndoStack', () => {
     expect(stack.canRedo()).toBe(true);
     stack.push(cmd('b'));
     expect(stack.canRedo()).toBe(false);
+  });
+
+  it('runs queued undos strictly one after another, in call order', async () => {
+    const stack = createUndoStack();
+    const order: string[] = [];
+    const gates = { a: deferred(), b: deferred() };
+    const a = cmd('a', async () => {
+      order.push('a:start');
+      await gates.a.promise;
+      order.push('a:end');
+    });
+    const b = cmd('b', async () => {
+      order.push('b:start');
+      await gates.b.promise;
+      order.push('b:end');
+    });
+    stack.push(a);
+    stack.push(b);
+
+    const first = stack.undo();
+    const second = stack.undo();
+    await vi.waitFor(() => expect(order).toEqual(['b:start']));
+    gates.a.resolve(); // releasing a early must not let it start before b finishes
+    await Promise.resolve();
+    expect(order).toEqual(['b:start']);
+
+    gates.b.resolve();
+    await first;
+    await second;
+    expect(order).toEqual(['b:start', 'b:end', 'a:start', 'a:end']);
+    expect(stack.canRedo()).toBe(true);
+    expect(stack.canUndo()).toBe(false);
+  });
+
+  it('a push during an in-flight undo drops that command instead of resurrecting it', async () => {
+    const stack = createUndoStack();
+    const gate = deferred();
+    const a = cmd('a', () => gate.promise);
+    const b = cmd('b');
+    stack.push(a);
+
+    const running = stack.undo();
+    await vi.waitFor(() => expect(a.undo).toHaveBeenCalled());
+    stack.push(b);
+    gate.resolve();
+    await running;
+
+    expect(stack.canRedo()).toBe(false); // a did not come back on the redo side
+    expect(stack.peek()).toBe(b);
+    await stack.undo();
+    expect(b.undo).toHaveBeenCalledOnce();
+    expect(a.undo).toHaveBeenCalledOnce();
+    expect(stack.canUndo()).toBe(false);
+  });
+
+  it('undo(expected) does nothing unless that command is on top', async () => {
+    const stack = createUndoStack();
+    const a = cmd('a');
+    const b = cmd('b');
+    stack.push(a);
+    stack.push(b);
+
+    expect(await stack.undo(a)).toBeUndefined();
+    expect(a.undo).not.toHaveBeenCalled();
+    expect(b.undo).not.toHaveBeenCalled();
+    expect(await stack.undo(b)).toBe(b);
   });
 
   it('notifies subscribers on change', () => {
@@ -121,9 +193,45 @@ describe('useUndo', () => {
     expect(hook.result.current.canRedo).toBe(true);
   });
 
+  it('the toast’s 復原 is withdrawn when another command is pushed without a toast', async () => {
+    const { stack, hook } = setup();
+    const a = cmd('刪除「A」');
+    const b = cmd('新增「B」');
+
+    act(() => {
+      stack.push(a);
+      hook.result.current.showToast('已刪除「A」', true);
+    });
+    expect(hook.result.current.toast).toEqual({ text: '已刪除「A」', undoable: true });
+
+    act(() => stack.push(b)); // e.g. a quick-add, which shows no toast
+    expect(hook.result.current.toast).toEqual({ text: '已刪除「A」', undoable: false });
+
+    await act(() => hook.result.current.undoToast());
+    expect(b.undo).not.toHaveBeenCalled();
+    expect(a.undo).not.toHaveBeenCalled();
+
+    await act(() => hook.result.current.undo()); // ⌘Z: still the top of the stack
+    expect(b.undo).toHaveBeenCalledOnce();
+  });
+
+  it('the toast’s 復原 undoes its own command while it is on top', async () => {
+    const { stack, hook } = setup();
+    const a = cmd('刪除「A」');
+    act(() => {
+      stack.push(a);
+      hook.result.current.showToast('已刪除「A」', true);
+    });
+
+    await act(() => hook.result.current.undoToast());
+    expect(a.undo).toHaveBeenCalledOnce();
+    expect(hook.result.current.toast?.text).toBe('已復原：刪除「A」');
+  });
+
   it('toast auto-hides after 6 seconds; a new toast replaces the old one', () => {
     vi.useFakeTimers();
-    const { hook } = setup();
+    const { stack, hook } = setup();
+    act(() => stack.push(cmd('a')));
 
     act(() => hook.result.current.showToast('第一則', true));
     expect(hook.result.current.toast).toEqual({ text: '第一則', undoable: true });

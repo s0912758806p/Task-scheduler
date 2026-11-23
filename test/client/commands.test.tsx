@@ -46,6 +46,10 @@ beforeEach(() => {
     if (r !== 'GET /api/tasks') sent.push({ route: r, body });
     if (r === 'GET /api/tasks') return jsonResponse(tasks);
     if (r === 'POST /api/tasks/batch') return jsonResponse(batchReply);
+    if (r === 'POST /api/tasks') {
+      const input = body as Partial<Task> & { id: string };
+      return jsonResponse(task(input.id, input), 201);
+    }
     if (req.method === 'DELETE') return jsonResponse(null, 204);
     if (req.method === 'PATCH') {
       const id = r.split('/').pop()!;
@@ -83,11 +87,11 @@ const patches = () => sent.filter((s) => s.route.startsWith('PATCH'));
 
 describe('useTaskCommands', () => {
   it('move: undo puts the task back after its old predecessor with position: null', async () => {
-    const { hook, toaster } = await setup();
+    const { hook } = await setup();
 
     await act(() => hook.result.current.cmds.move(tasks[1], 'in-progress', 512, null));
     expect(patches()[0]).toEqual({ route: 'PATCH /api/tasks/b', body: { position: 512, status: 'in-progress' } });
-    expect(toaster.get()).toEqual({ text: '已移到進行中：「任務 b」', undoable: true });
+    expect(hook.result.current.undo.toast).toEqual({ text: '已移到進行中：「任務 b」', undoable: true });
 
     await act(() => hook.result.current.undo.undo());
     expect(patches()[1]).toEqual({
@@ -133,11 +137,11 @@ describe('useTaskCommands', () => {
   });
 
   it('remove: toast 「已刪除「…」」, undo restores with deletedAt: null', async () => {
-    const { hook, toaster } = await setup();
+    const { hook } = await setup();
 
     await act(() => hook.result.current.cmds.remove(tasks[0]));
     expect(sent[0].route).toBe('DELETE /api/tasks/a');
-    expect(toaster.get()).toEqual({ text: '已刪除「任務 a」', undoable: true });
+    expect(hook.result.current.undo.toast).toEqual({ text: '已刪除「任務 a」', undoable: true });
 
     await act(() => hook.result.current.undo.undo());
     expect(patches()[0]).toEqual({ route: 'PATCH /api/tasks/a', body: { deletedAt: null } });
@@ -157,6 +161,22 @@ describe('useTaskCommands', () => {
     expect(toaster.get()?.text).toBe('無法復原：任務已不存在');
     expect(hook.result.current.undo.canUndo).toBe(false);
     expect(hook.result.current.undo.canRedo).toBe(false);
+  });
+
+  it('a silent create after a delete withdraws the toast’s 復原; it never undoes the create', async () => {
+    const { hook } = await setup();
+    await act(() => hook.result.current.cmds.remove(tasks[0])); // toast 已刪除「任務 a」· 復原
+    expect(hook.result.current.undo.toast?.undoable).toBe(true);
+
+    await act(() => hook.result.current.cmds.create({ boardId: BOARD, title: '新任務' })); // no toast
+    expect(hook.result.current.undo.toast).toEqual({ text: '已刪除「任務 a」', undoable: false });
+
+    sent = [];
+    await act(() => hook.result.current.undo.undoToast());
+    expect(sent).toEqual([]); // neither the create nor the delete was undone
+
+    await act(() => hook.result.current.undo.undo()); // ⌘Z still undoes the top: the create
+    expect(sent.map((x) => x.route)).toEqual([expect.stringMatching(/^DELETE \/api\/tasks\//)]);
   });
 
   it('batchMove: reports skipped blocked tasks and undoes only the updated ones', async () => {

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeStore } from '@/client/store';
@@ -118,5 +118,14 @@ describe('Sidebar', () => {
     for (const name of [/新增看板/, /主題：/, /匯入／匯出/, /到期提醒/, /快捷鍵/, /王小明/]) {
       expect(screen.getByRole('button', { name })).toBeTruthy();
     }
+  });
+
+  it('shows the email in the user menu as readable text, not a disabled item', async () => {
+    renderSidebar();
+    fireEvent.click(await screen.findByRole('button', { name: /王小明/ }));
+
+    const email = await screen.findByText('ming@example.com');
+    expect(email.closest('[aria-disabled="true"], .ant-dropdown-menu-item-disabled')).toBeNull();
+    expect(screen.getByRole('menuitem', { name: /登出/ })).toBeTruthy();
   });
 });

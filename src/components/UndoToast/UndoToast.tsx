@@ -1,13 +1,14 @@
 'use client';
 // Bottom toast (spec §6.4/§9): shows the current useUndo() toast — e.g. 「已刪除「…」· 復原」.
-// 復原 runs the top command of the undo stack; ✕ closes it. Auto-hide (6 s) and replacement are
+// 復原 undoes the command the toast was shown for (offered only while it is still the top of the
+// undo stack); ✕ closes it. Auto-hide (6 s) and replacement are
 // handled by the toaster. The live region stays mounted so screen readers announce each toast.
 import { useUndo } from '@/client/undo';
 import { IconClose } from '@/components/icons';
 import styles from './UndoToast.module.scss';
 
 export function UndoToast() {
-  const { toast, undo, hideToast } = useUndo();
+  const { toast, undoToast, hideToast } = useUndo();
   return (
     <div className={styles.region} role="status" aria-live="polite">
       {toast && (
@@ -17,10 +18,7 @@ export function UndoToast() {
             <button
               type="button"
               className={styles.action}
-              onClick={() => {
-                hideToast();
-                void undo();
-              }}
+              onClick={() => void undoToast()}
             >
               復原
             </button>

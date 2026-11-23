@@ -192,6 +192,28 @@
   border-top: 1px solid var(--border-soft);
 }
 
+.userPopup {
+  min-width: 200px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(28, 27, 24, 0.12);
+  overflow: hidden;
+
+  :global(.ant-dropdown-menu) {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+.userEmail {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .avatar {
   flex: none;
   background: var(--accent);
