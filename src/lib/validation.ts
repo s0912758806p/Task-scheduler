@@ -62,7 +62,9 @@ const subtasks = z.array(subtask).max(SUBTASKS_MAX, `子任務最多 ${SUBTASKS_
 const name = z.string().trim().min(1, '名稱不可為空').max(BOARD_NAME_MAX, `名稱最多 ${BOARD_NAME_MAX} 字`);
 
 export const boardCreate = z.object({ name });
-export const boardUpdate = z.object({ name });
+export const boardUpdate = z
+  .object({ name: name.optional(), position: z.number().finite().optional() })
+  .refine((v) => v.name !== undefined || v.position !== undefined, '至少需要一個欄位');
 
 const taskFields = {
   title,

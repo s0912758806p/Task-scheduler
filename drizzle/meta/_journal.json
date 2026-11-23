@@ -15,6 +15,13 @@
       "when": 1795427208071,
       "tag": "0001_open_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795428077828,
+      "tag": "0002_long_earthquake",
+      "breakpoints": true
     }
   ]
 }
