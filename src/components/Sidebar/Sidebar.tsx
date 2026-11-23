@@ -4,6 +4,7 @@
 // (taskQueries.focusGroups, today from useToday so it rolls over at midnight), the board list with open-task counts (from the task cache; the
 // server's openCount until tasks load), 新增看板, and the footer: theme toggle (淺色 → 深色 →
 // 跟隨系統), 匯入／匯出 and 到期提醒 (wired in Task 17), 快捷鍵 help, and the user menu (登出).
+// 快捷鍵 dispatches setShortcutsOpen(true); the dialog itself is mounted once by AppShell.
 // The current page comes from usePathname(); following a link closes the mobile drawer.
 // Deleting the board being viewed sends you to /focus.
 import { Modal } from 'antd';
@@ -14,7 +15,7 @@ import { useDeleteBoardMutation, useGetBoardsQuery, useGetTasksQuery } from '@/c
 import { useAppDispatch } from '@/client/store';
 import { useThemePreference } from '@/client/theme';
 import { useToday } from '@/client/useToday';
-import { setPaletteOpen, setSidebarOpen } from '@/client/uiSlice';
+import { setPaletteOpen, setShortcutsOpen, setSidebarOpen } from '@/client/uiSlice';
 import {
   IconBell,
   IconFocus,
@@ -32,7 +33,6 @@ import { nextTheme, THEME_LABEL } from '@/lib/theme';
 import type { Board } from '@/lib/types';
 import { BoardItem } from './BoardItem';
 import { NewBoardModal } from './NewBoardModal';
-import { ShortcutsDialog } from './ShortcutsDialog';
 import styles from './Sidebar.module.scss';
 import { UserMenu, type SidebarUser } from './UserMenu';
 
@@ -49,7 +49,6 @@ export function Sidebar({ user }: { user: SidebarUser }) {
   const [modal, modalHolder] = Modal.useModal();
   const today = useToday();
   const [creating, setCreating] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
 
   const { openByBoard, focusCount } = useMemo(() => {
     if (!tasks) return { openByBoard: null, focusCount: 0 };
@@ -143,7 +142,7 @@ export function Sidebar({ user }: { user: SidebarUser }) {
           <IconBell />
           <span className={styles.grow}>到期提醒</span>
         </button>
-        <button type="button" className={styles.item} onClick={() => setShowShortcuts(true)}>
+        <button type="button" className={styles.item} onClick={() => dispatch(setShortcutsOpen(true))}>
           <IconKeyboard />
           <span className={styles.grow}>快捷鍵</span>
           <kbd className={styles.kbd}>?</kbd>
@@ -160,7 +159,6 @@ export function Sidebar({ user }: { user: SidebarUser }) {
           router.push(`/b/${board.id}`);
         }}
       />
-      <ShortcutsDialog open={showShortcuts} onClose={() => setShowShortcuts(false)} />
       {modalHolder}
     </nav>
   );

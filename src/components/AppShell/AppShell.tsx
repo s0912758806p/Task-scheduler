@@ -2,23 +2,31 @@
 // Signed-in page frame (spec §9): Sidebar (232px) + <main> + the task detail panel (TaskDetailDock:
 // right column for `?task=<id|new>`, a bottom Drawer on phones) + the bottom UndoToast. Below 768px
 // the sidebar becomes an AntD Drawer opened from the top bar's hamburger (uiSlice.sidebarOpen) and
-// closed on navigation. Also starts loading boards and tasks for every page.
+// closed on navigation. Mounts the ⌘K CommandPalette, the 快捷鍵 dialog and useShortcuts (the one
+// global keydown listener). Also starts loading boards and tasks for every page.
 import { Drawer } from 'antd';
 import { usePathname } from 'next/navigation';
 import { Suspense, useEffect, type ReactNode } from 'react';
 import { useAppDispatch, useAppSelector } from '@/client/store';
-import { setSidebarOpen } from '@/client/uiSlice';
+import { setShortcutsOpen, setSidebarOpen } from '@/client/uiSlice';
+import { useShortcuts } from '@/client/useShortcuts';
+import { CommandPalette } from '@/components/CommandPalette/CommandPalette';
 import { IconMenu } from '@/components/icons';
+import { ShortcutsDialog } from '@/components/Sidebar/ShortcutsDialog';
 import { Sidebar } from '@/components/Sidebar/Sidebar';
 import type { SidebarUser } from '@/components/Sidebar/UserMenu';
 import { TaskDetailDock } from '@/components/TaskDetailPanel/TaskDetailDock';
 import { UndoToast } from '@/components/UndoToast/UndoToast';
 import styles from './AppShell.module.scss';
 
+const noop = () => {};
+
 export function AppShell({ user, children }: { user: SidebarUser; children: ReactNode }) {
   const dispatch = useAppDispatch();
   const open = useAppSelector((s) => s.ui.sidebarOpen);
+  const shortcutsOpen = useAppSelector((s) => s.ui.shortcutsOpen);
   const pathname = usePathname();
+  useShortcuts();
 
   useEffect(() => {
     dispatch(setSidebarOpen(false));
@@ -57,6 +65,9 @@ export function AppShell({ user, children }: { user: SidebarUser; children: Reac
         <TaskDetailDock />
       </Suspense>
       <UndoToast />
+      {/* Task 17 wires the export/import and reminder handlers. */}
+      <CommandPalette onExportImport={noop} onReminders={noop} />
+      <ShortcutsDialog open={shortcutsOpen} onClose={() => dispatch(setShortcutsOpen(false))} />
     </div>
   );
 }

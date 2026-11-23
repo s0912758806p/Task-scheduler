@@ -4,6 +4,7 @@
 //   clearFilters resets to EMPTY_FILTERS.
 // - toggleBatch flips batch mode; leaving it clears the selection. toggleSelected adds/removes one
 //   id; setSelected replaces the selection.
+// - setShortcutsOpen opens/closes the 快捷鍵 help dialog (Sidebar button and the `?` key).
 // - setFilterOpen opens/closes the board top bar's filter popover; opening it focuses its search
 //   input (「搜尋任務」, data-search-input). The `/` shortcut (Task 15) dispatches setFilterOpen(true).
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
@@ -16,6 +17,7 @@ export interface UiState {
   selectedIds: string[];
   filterOpen: boolean;
   paletteOpen: boolean;
+  shortcutsOpen: boolean;
   sidebarOpen: boolean;
 }
 
@@ -26,6 +28,7 @@ export const initialUiState: UiState = {
   selectedIds: [],
   filterOpen: false,
   paletteOpen: false,
+  shortcutsOpen: false,
   sidebarOpen: false,
 };
 
@@ -64,6 +67,9 @@ export const uiSlice = createSlice({
     setPaletteOpen(state, action: PayloadAction<boolean>) {
       state.paletteOpen = action.payload;
     },
+    setShortcutsOpen(state, action: PayloadAction<boolean>) {
+      state.shortcutsOpen = action.payload;
+    },
     setSidebarOpen(state, action: PayloadAction<boolean>) {
       state.sidebarOpen = action.payload;
     },
@@ -80,5 +86,6 @@ export const {
   setSelected,
   setFilterOpen,
   setPaletteOpen,
+  setShortcutsOpen,
   setSidebarOpen,
 } = uiSlice.actions;

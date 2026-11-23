@@ -29,7 +29,7 @@ A modern Kanban-style task management app built with React and TypeScript. Suppo
 **Notifications & UX**
 - Browser push notifications for overdue tasks and tasks due within 24 hours
 - Statistics panel with completion rate and urgent task count
-- Keyboard shortcuts: `N` new task, `/` focus search, `Ctrl+Z` undo, `Ctrl+Y` redo
+- Keyboard shortcuts: `⌘K`/`Ctrl+K` command palette, `N` new task, `/` focus search, `1`–`9` switch board, `G` then `F` today focus, `⌘Z` undo, `⌘⇧Z`/`Ctrl+Y` redo, `?` shortcut help
 - Quick-add input at the bottom of each column
 - Light / Dark theme toggle
 
