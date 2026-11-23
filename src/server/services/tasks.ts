@@ -30,6 +30,7 @@
 //   tasks come back, live ones count as updated. Like a single restore, restore does not re-check
 //   dependency cycles (a restored task keeps its old dependsOn; ids deleted meanwhile are ignored
 //   by the blocking rules).
+// - lockBoard, checkDependencies and toDbStatus are exported for importExport.ts.
 // - renumberColumn: re-spaces a column's non-deleted tasks by POSITION_STEP, keeping their order.
 import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
@@ -48,7 +49,7 @@ type DbStatus = Row['status'];
 const notFound = () => new ApiError(404, 'NOT_FOUND', '找不到這個任務');
 const cycle = () => new ApiError(409, 'DEPENDENCY_CYCLE', '前置任務不能包含自己或形成循環');
 
-const toDbStatus = (s: TaskStatus): DbStatus => (s === 'in-progress' ? 'in_progress' : s);
+export const toDbStatus = (s: TaskStatus): DbStatus => (s === 'in-progress' ? 'in_progress' : s);
 /** Columns written when a task's status changes: entering done stamps completedAt, leaving clears it. */
 const statusFields = (status: TaskStatus) => ({
   status: toDbStatus(status),
@@ -95,7 +96,7 @@ export async function listTasks(
 }
 
 /** Serializes writes that read the board's task graph or column order. */
-async function lockBoard(db: DB, boardId: string): Promise<void> {
+export async function lockBoard(db: DB, boardId: string): Promise<void> {
   await db.select({ id: boards.id }).from(boards).where(eq(boards.id, boardId)).for('update');
 }
 
@@ -111,7 +112,11 @@ async function boardTasks(db: DB, userId: string, boardId: string): Promise<Map<
   return indexById(rows.map(toApiTask));
 }
 
-function checkDependencies(taskId: string, dependsOn: string[], byId: Map<string, Task>): void {
+export function checkDependencies(
+  taskId: string,
+  dependsOn: string[],
+  byId: Map<string, Pick<Task, 'dependsOn'>>,
+): void {
   if (dependsOn.includes(taskId)) throw cycle();
   const invalid = dependsOn.filter((id) => !byId.has(id));
   if (invalid.length > 0) {
