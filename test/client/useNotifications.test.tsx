@@ -177,6 +177,9 @@ describe('useNotifications', () => {
     vi.stubGlobal('Notification', Throwing);
     const { result } = await setup();
     expect(attempts).toBe(1);
+    await act(async () => {
+      await Promise.resolve(); // the failure state is set in a microtask
+    });
     expect(result.current.permission).toBe('unsupported');
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
