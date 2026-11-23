@@ -19,13 +19,24 @@
 // - Writes run in a transaction that locks the board row, so dependency checks and renumbering
 //   on one board are serialized.
 // - softDeleteTask: sets deletedAt; already deleted → 404.
+// - batchTasks (POST /api/tasks/batch): one transaction; ids are de-duplicated, every involved board
+//   is locked FOR UPDATE in ascending id order (deadlock-safe), then each id is handled in request
+//   order. Unknown / foreign / non-UUID ids → skipped NOT_FOUND (never fails the batch).
+//   move: soft-deleted → NOT_FOUND; blocking is judged on the state at the start of the batch (a
+//   prerequisite moved to done in the same batch does not unblock its dependent) → skipped
+//   TASK_BLOCKED; tasks already in the target status count as updated and keep their position;
+//   moved tasks are appended at the END of the target column in request order; completedAt like
+//   updateTask. delete: soft delete, already-deleted counts as updated. restore: soft-deleted
+//   tasks come back, live ones count as updated. Like a single restore, restore does not re-check
+//   dependency cycles (a restored task keeps its old dependsOn; ids deleted meanwhile are ignored
+//   by the blocking rules).
 // - renumberColumn: re-spaces a column's non-deleted tasks by POSITION_STEP, keeping their order.
 import { randomUUID } from 'node:crypto';
-import { and, asc, eq, isNull, ne } from 'drizzle-orm';
-import { positionBetween, renumber } from '@/lib/position';
+import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { POSITION_STEP, positionBetween, renumber } from '@/lib/position';
 import { indexById, openBlockers } from '@/lib/taskQueries';
 import type { Priority, Task, TaskStatus } from '@/lib/types';
-import type { TaskCreateInput, TaskUpdateInput } from '@/lib/validation';
+import type { BatchRequest, TaskCreateInput, TaskUpdateInput } from '@/lib/validation';
 import type { DB } from '@/server/db';
 import { boards, tasks } from '@/server/db/schema';
 import { ApiError } from '@/server/errors';
@@ -38,6 +49,12 @@ const notFound = () => new ApiError(404, 'NOT_FOUND', '找不到這個任務');
 const cycle = () => new ApiError(409, 'DEPENDENCY_CYCLE', '前置任務不能包含自己或形成循環');
 
 const toDbStatus = (s: TaskStatus): DbStatus => (s === 'in-progress' ? 'in_progress' : s);
+/** Columns written when a task's status changes: entering done stamps completedAt, leaving clears it. */
+const statusFields = (status: TaskStatus) => ({
+  status: toDbStatus(status),
+  completedAt: status === 'done' ? new Date() : null,
+});
+
 const toApiStatus = (s: DbStatus): TaskStatus => (s === 'in_progress' ? 'in-progress' : s);
 
 export function toApiTask(row: Row): Task {
@@ -132,6 +149,17 @@ async function topPosition(db: DB, boardId: string, status: TaskStatus): Promise
     .orderBy(asc(tasks.position))
     .limit(1);
   return positionBetween(null, first?.position ?? null) ?? 0;
+}
+
+/** The position just after the last live task of a column (0 for an empty one). */
+async function endPosition(db: DB, boardId: string, status: TaskStatus): Promise<number> {
+  const [last] = await db
+    .select({ position: tasks.position })
+    .from(tasks)
+    .where(liveInColumn(boardId, status))
+    .orderBy(desc(tasks.position))
+    .limit(1);
+  return last ? last.position + POSITION_STEP : 0;
 }
 
 export async function renumberColumn(db: DB, boardId: string, status: TaskStatus): Promise<void> {
@@ -239,8 +267,7 @@ export async function updateTask(
     if (patch.dependsOn !== undefined) set.dependsOn = dependsOn;
     if (patch.deletedAt === null) set.deletedAt = null;
     if (statusChanged) {
-      set.status = toDbStatus(status);
-      set.completedAt = status === 'done' ? new Date() : null;
+      Object.assign(set, statusFields(status));
     }
     if (patch.position === null) {
       set.position = await insertPosition(tx, row, status, patch.insertAfterId ?? null);
@@ -263,4 +290,71 @@ export async function softDeleteTask(db: DB, userId: string, id: string): Promis
     .where(and(eq(tasks.id, id), eq(tasks.userId, userId), isNull(tasks.deletedAt)))
     .returning({ id: tasks.id });
   if (rows.length === 0) throw notFound();
+}
+
+export interface BatchResult {
+  updated: string[];
+  skipped: Array<{ id: string; reason: 'TASK_BLOCKED' | 'NOT_FOUND' }>;
+}
+
+export async function batchTasks(db: DB, userId: string, req: BatchRequest): Promise<BatchResult> {
+  const ids = [...new Set(req.ids)];
+  const result: BatchResult = { updated: [], skipped: [] };
+  const uuids = ids.filter(isUuid);
+  return db.transaction(async (tx) => {
+    const found =
+      uuids.length === 0
+        ? []
+        : await tx
+            .select({ boardId: tasks.boardId })
+            .from(tasks)
+            .where(and(inArray(tasks.id, uuids), eq(tasks.userId, userId)));
+    const boardIds = [...new Set(found.map((r) => r.boardId))].sort();
+    for (const boardId of boardIds) await lockBoard(tx, boardId);
+
+    // Read after locking so the batch sees the committed state of every involved board.
+    const rows =
+      uuids.length === 0
+        ? []
+        : await tx
+            .select()
+            .from(tasks)
+            .where(and(inArray(tasks.id, uuids), eq(tasks.userId, userId)));
+    const rowById = new Map(rows.map((r) => [r.id, r]));
+    const now = new Date();
+
+    const graphs = new Map<string, Map<string, Task>>(); // per board, at the start of the batch
+    const nextPosition = new Map<string, number>(); // per board, next free spot at the column end
+    if (req.op === 'move') {
+      for (const boardId of boardIds) graphs.set(boardId, await boardTasks(tx, userId, boardId));
+    }
+
+    for (const id of ids) {
+      const row = rowById.get(id);
+      if (!row || (req.op === 'move' && row.deletedAt !== null)) {
+        result.skipped.push({ id, reason: 'NOT_FOUND' });
+        continue;
+      }
+      const owned = and(eq(tasks.id, id), eq(tasks.userId, userId));
+      if (req.op === 'delete') {
+        if (row.deletedAt === null) await tx.update(tasks).set({ deletedAt: now }).where(owned);
+      } else if (req.op === 'restore') {
+        if (row.deletedAt !== null) await tx.update(tasks).set({ deletedAt: null, updatedAt: now }).where(owned);
+      } else {
+        const target = req.status as TaskStatus;
+        if (toApiStatus(row.status) !== target) {
+          const byId = graphs.get(row.boardId) as Map<string, Task>;
+          if (openBlockers(toApiTask(row), byId).length > 0) {
+            result.skipped.push({ id, reason: 'TASK_BLOCKED' });
+            continue;
+          }
+          const position = nextPosition.get(row.boardId) ?? (await endPosition(tx, row.boardId, target));
+          nextPosition.set(row.boardId, position + POSITION_STEP);
+          await tx.update(tasks).set({ ...statusFields(target), position, updatedAt: now }).where(owned);
+        }
+      }
+      result.updated.push(id);
+    }
+    return result;
+  });
 }
