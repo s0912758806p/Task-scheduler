@@ -1,5 +1,7 @@
 // zod schemas shared by API handlers and forms. Strings are trimmed before length checks; titles
 // have newlines collapsed to spaces; tags are trimmed, de-duplicated and bounded.
+// taskUpdate.position may be null (server renumbers the column and inserts after `insertAfterId`,
+// which is accepted only together with position: null).
 import { z } from 'zod';
 
 export const TITLE_MAX = 200;
@@ -102,10 +104,17 @@ export const taskUpdate = z
     tags: taskFields.tags.optional(),
     subtasks: taskFields.subtasks.optional(),
     dependsOn: taskFields.dependsOn.optional(),
-    position: taskFields.position.optional(),
+    // null = the client's positionBetween() ran out of room: the server renumbers the column and
+    // inserts the task right after `insertAfterId` (null → at the top).
+    position: taskFields.position.nullable().optional(),
+    insertAfterId: z.uuid().nullable().optional(),
     deletedAt: z.null().optional(),
   })
-  .refine((v) => Object.values(v).some((x) => x !== undefined), '至少需要一個欄位');
+  .refine((v) => Object.values(v).some((x) => x !== undefined), '至少需要一個欄位')
+  .refine((v) => v.insertAfterId === undefined || v.position === null, {
+    message: 'insertAfterId 只能搭配 position: null',
+    path: ['insertAfterId'],
+  });
 
 export const batchRequest = z
   .object({

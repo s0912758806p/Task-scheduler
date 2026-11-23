@@ -33,7 +33,7 @@ export type BoardUpdateInput = z.infer<typeof boardUpdate>;
 
 const notFound = () => new ApiError(404, 'NOT_FOUND', '找不到這個看板');
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const isUuid = (s: string) => UUID_RE.test(s);
+export const isUuid = (s: string) => UUID_RE.test(s);
 
 // Raw qualified names: drizzle drops the table qualifier of interpolated columns inside a select.
 const openCount = sql<number>`(

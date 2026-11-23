@@ -35,6 +35,15 @@ describe('taskUpdate', () => {
     expect(taskUpdate.safeParse({ deletedAt: null }).success).toBe(true);
     expect(taskUpdate.safeParse({ deletedAt: 'x' }).success).toBe(false);
   });
+  it('accepts position: null with an optional insertAfterId, and insertAfterId only then', () => {
+    const anchor = crypto.randomUUID();
+    expect(taskUpdate.safeParse({ position: null }).success).toBe(true);
+    expect(taskUpdate.safeParse({ position: null, insertAfterId: null }).success).toBe(true);
+    expect(taskUpdate.safeParse({ position: null, insertAfterId: anchor }).success).toBe(true);
+    expect(taskUpdate.safeParse({ position: null, insertAfterId: 'x' }).success).toBe(false);
+    expect(taskUpdate.safeParse({ position: 3, insertAfterId: anchor }).success).toBe(false);
+    expect(taskUpdate.safeParse({ insertAfterId: anchor }).success).toBe(false);
+  });
 });
 
 describe('batchRequest', () => {
