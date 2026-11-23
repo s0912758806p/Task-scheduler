@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeStore } from '@/client/store';
 import { ThemeProvider } from '@/client/theme';
+import type { Notifications } from '@/client/useNotifications';
 import { createToaster, UndoProvider } from '@/client/undo';
 import { Sidebar } from '@/components/Sidebar/Sidebar';
 import { addDays, todayISO } from '@/lib/dates';
@@ -14,8 +15,9 @@ import { installFetch, jsonResponse, route } from '../helpers/fetch';
 const MAIN = '3c7e1a52-0f4b-4d8e-9a61-7b2c5d8e4f10';
 const PERSONAL = '9d2f6b81-5c3a-4e7f-8b10-2a4c6e8d0f21';
 
+let pathname = `/b/${MAIN}`;
 vi.mock('next/navigation', () => ({
-  usePathname: () => `/b/${MAIN}`,
+  usePathname: () => pathname,
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
 }));
 vi.mock('@/client/authClient', () => ({ signOut: vi.fn() }));
@@ -58,6 +60,7 @@ const tasks: Task[] = [
 ];
 
 beforeEach(() => {
+  pathname = `/b/${MAIN}`;
   stubBrowserApis();
   installFetch((req) => {
     switch (route(req)) {
@@ -75,18 +78,19 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function renderSidebar() {
+function renderSidebar(reminders: Notifications = { permission: 'default', enable: vi.fn() }) {
   const toaster = createToaster();
   const store = makeStore({ toast: toaster.show });
-  return render(
+  render(
     <ThemeProvider initial="light">
       <Provider store={store}>
         <UndoProvider toaster={toaster}>
-          <Sidebar user={{ name: '王小明', email: 'ming@example.com', image: null }} />
+          <Sidebar user={{ name: '王小明', email: 'ming@example.com', image: null }} reminders={reminders} />
         </UndoProvider>
       </Provider>
     </ThemeProvider>,
   );
+  return store;
 }
 
 describe('Sidebar', () => {
@@ -140,5 +144,36 @@ describe('Sidebar', () => {
     const email = await screen.findByText('ming@example.com');
     expect(email.closest('[aria-disabled="true"], .ant-dropdown-menu-item-disabled')).toBeNull();
     expect(screen.getByRole('menuitem', { name: /登出/ })).toBeTruthy();
+  });
+
+  it('匯入／匯出 opens the DataMenu on a board and is disabled on /focus', async () => {
+    const store = renderSidebar();
+    fireEvent.click(await screen.findByRole('button', { name: /匯入／匯出/ }));
+    expect(store.getState().ui.dataMenuOpen).toBe(true);
+    cleanup();
+
+    pathname = '/focus';
+    renderSidebar();
+    expect((screen.getByRole('button', { name: /匯入／匯出/ }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('到期提醒 shows 開啟 until granted, then 已開啟; clicking asks for permission once', async () => {
+    const enable = vi.fn();
+    renderSidebar({ permission: 'default', enable });
+    const button = screen.getByRole('button', { name: /到期提醒/ });
+    expect(within(button).getByText('開啟')).toBeTruthy();
+    fireEvent.click(button);
+    expect(enable).toHaveBeenCalledTimes(1);
+    cleanup();
+
+    renderSidebar({ permission: 'granted', enable });
+    const on = screen.getByRole('button', { name: /到期提醒/ }) as HTMLButtonElement;
+    expect(within(on).getByText('已開啟')).toBeTruthy();
+    expect(on.disabled).toBe(true);
+  });
+
+  it('shows 此瀏覽器不支援通知 (disabled) when Notification is unavailable', () => {
+    renderSidebar({ permission: 'unsupported', enable: vi.fn() });
+    expect((screen.getByRole('button', { name: '此瀏覽器不支援通知' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

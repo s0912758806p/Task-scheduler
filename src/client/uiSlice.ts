@@ -5,6 +5,7 @@
 // - toggleBatch flips batch mode; leaving it clears the selection. toggleSelected adds/removes one
 //   id; setSelected replaces the selection.
 // - setShortcutsOpen opens/closes the 快捷鍵 help dialog (Sidebar button and the `?` key).
+// - setDataMenuOpen opens/closes the 匯入／匯出 dialog (Sidebar button and the palette action; DataMenu).
 // - setFilterOpen opens/closes the board top bar's filter popover; opening it focuses its search
 //   input (「搜尋任務」, data-search-input). The `/` shortcut (Task 15) dispatches setFilterOpen(true).
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
@@ -18,6 +19,7 @@ export interface UiState {
   filterOpen: boolean;
   paletteOpen: boolean;
   shortcutsOpen: boolean;
+  dataMenuOpen: boolean;
   sidebarOpen: boolean;
 }
 
@@ -29,6 +31,7 @@ export const initialUiState: UiState = {
   filterOpen: false,
   paletteOpen: false,
   shortcutsOpen: false,
+  dataMenuOpen: false,
   sidebarOpen: false,
 };
 
@@ -70,6 +73,9 @@ export const uiSlice = createSlice({
     setShortcutsOpen(state, action: PayloadAction<boolean>) {
       state.shortcutsOpen = action.payload;
     },
+    setDataMenuOpen(state, action: PayloadAction<boolean>) {
+      state.dataMenuOpen = action.payload;
+    },
     setSidebarOpen(state, action: PayloadAction<boolean>) {
       state.sidebarOpen = action.payload;
     },
@@ -87,5 +93,6 @@ export const {
   setFilterOpen,
   setPaletteOpen,
   setShortcutsOpen,
+  setDataMenuOpen,
   setSidebarOpen,
 } = uiSlice.actions;

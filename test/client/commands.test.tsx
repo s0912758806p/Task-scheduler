@@ -7,6 +7,7 @@ import { api } from '@/client/api';
 import { useTaskCommands } from '@/client/commands';
 import { makeStore } from '@/client/store';
 import { createToaster, createUndoStack, UndoProvider, useUndo } from '@/client/undo';
+import { SAMPLE_TASKS } from '@/lib/sampleTasks';
 import type { Task } from '@/lib/types';
 import { installFetch, jsonResponse, route } from '../helpers/fetch';
 
@@ -211,5 +212,36 @@ describe('useTaskCommands', () => {
 
     expect(hook.result.current.undo.toast).toEqual({ text: '沒有需要移動的任務', undoable: false });
     expect(hook.result.current.undo.canUndo).toBe(false);
+  });
+
+  it('loadSamples: appends after each column’s current max, creates prerequisites first, one undo', async () => {
+    const { hook } = await setup(); // tasks: a (todo 1024), b (todo 2048), c (in-progress 1024)
+    let count = 0;
+    await act(async () => {
+      count = await hook.result.current.cmds.loadSamples(BOARD);
+    });
+    const posts = sent.filter((s) => s.route === 'POST /api/tasks').map((s) => s.body as Task);
+    expect(count).toBe(SAMPLE_TASKS.length);
+    expect(posts).toHaveLength(SAMPLE_TASKS.length);
+
+    const byStatus = (status: string) => posts.filter((p) => p.status === status).map((p) => p.position);
+    for (const [status, max] of [['todo', 2048], ['in-progress', 1024], ['done', -1024]] as const) {
+      const got = byStatus(status);
+      expect(Math.min(...got)).toBe(max + 1024);
+      expect(got).toEqual([...got].sort((x, y) => x - y)); // list order = column order
+    }
+
+    // dependsOn points at ids created earlier in the same run
+    const ids = new Set<string>();
+    for (const p of posts) {
+      for (const dep of p.dependsOn) expect(ids.has(dep)).toBe(true);
+      ids.add(p.id);
+    }
+    expect(posts.some((p) => p.dependsOn.length > 0)).toBe(true);
+
+    sent.length = 0;
+    batchReply = { updated: [...ids], skipped: [] };
+    await act(() => hook.result.current.undo.undo());
+    expect(sent).toEqual([{ route: 'POST /api/tasks/batch', body: { ids: [...ids], op: 'delete' } }]);
   });
 });

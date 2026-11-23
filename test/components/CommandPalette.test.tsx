@@ -157,24 +157,26 @@ describe('CommandPalette', () => {
     expect(push).toHaveBeenCalledWith(`/b/${MAIN}?task=${created[0].id as string}`);
   });
 
-  it('on /focus the new task goes to the first board; board-bound actions are disabled', async () => {
+  it('on /focus the new task goes to the first board; export/import is disabled', async () => {
     pathname = '/focus';
     renderPalette();
     await screen.findByText('撰寫 API 規格文件');
-    for (const name of [/匯出／匯入目前看板/, /開啟到期提醒/]) {
-      expect(screen.getByRole('option', { name }).getAttribute('aria-disabled')).toBe('true');
-    }
-    fireEvent.click(screen.getByRole('option', { name: /開啟到期提醒/ }));
-    expect(onReminders).not.toHaveBeenCalled();
+    expect(screen.getByRole('option', { name: /匯出／匯入目前看板/ }).getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(screen.getByRole('option', { name: /匯出／匯入目前看板/ }));
+    expect(onExportImport).not.toHaveBeenCalled();
+    // reminders are not tied to a board
+    expect(screen.getByRole('option', { name: /開啟到期提醒/ }).getAttribute('aria-disabled')).toBeNull();
     fireEvent.change(input(), { target: { value: 'zzz' } });
     fireEvent.keyDown(input(), { key: 'Enter' });
     await waitFor(() => expect(created).toHaveLength(1));
     expect(created[0]).toMatchObject({ boardId: MAIN, title: 'zzz' });
   });
 
-  it('runs the Task 17 hooks on a board', async () => {
+  it('runs the export/import and reminder handlers', async () => {
     renderPalette();
     await screen.findByText('撰寫 API 規格文件');
+    fireEvent.click(screen.getByRole('option', { name: /匯出／匯入目前看板/ }));
+    expect(onExportImport).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('option', { name: /開啟到期提醒/ }));
     expect(onReminders).toHaveBeenCalledTimes(1);
   });

@@ -3,7 +3,8 @@
 // uiSlice), 今日焦點 with a badge = overdue + due-today open tasks across all boards
 // (taskQueries.focusGroups, today from useToday so it rolls over at midnight), the board list with open-task counts (from the task cache; the
 // server's openCount until tasks load), 新增看板, and the footer: theme toggle (淺色 → 深色 →
-// 跟隨系統), 匯入／匯出 and 到期提醒 (wired in Task 17), 快捷鍵 help, and the user menu (登出).
+// 跟隨系統), 匯入／匯出 (opens the DataMenu dialog; disabled on /focus) and 到期提醒 (shows 開啟 / 已開啟 from
+// the shared useNotifications result AppShell passes in as `reminders`; 此瀏覽器不支援通知 when unsupported), 快捷鍵 help, and the user menu (登出).
 // 快捷鍵 dispatches setShortcutsOpen(true); the dialog itself is mounted once by AppShell.
 // The current page comes from usePathname(); following a link closes the mobile drawer.
 // Deleting the board being viewed sends you to /focus.
@@ -15,7 +16,8 @@ import { useDeleteBoardMutation, useGetBoardsQuery, useGetTasksQuery } from '@/c
 import { useAppDispatch } from '@/client/store';
 import { useThemePreference } from '@/client/theme';
 import { useToday } from '@/client/useToday';
-import { setPaletteOpen, setShortcutsOpen, setSidebarOpen } from '@/client/uiSlice';
+import { setDataMenuOpen, setPaletteOpen, setShortcutsOpen, setSidebarOpen } from '@/client/uiSlice';
+import type { Notifications } from '@/client/useNotifications';
 import {
   IconBell,
   IconFocus,
@@ -38,7 +40,7 @@ import { UserMenu, type SidebarUser } from './UserMenu';
 
 const THEME_ICON = { light: IconSun, dark: IconMoon, system: IconMonitor };
 
-export function Sidebar({ user }: { user: SidebarUser }) {
+export function Sidebar({ user, reminders }: { user: SidebarUser; reminders: Notifications }) {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -79,6 +81,7 @@ export function Sidebar({ user }: { user: SidebarUser }) {
     });
   }
 
+  const onBoard = pathname?.startsWith('/b/') ?? false;
   const ThemeIcon = THEME_ICON[pref];
 
   return (
@@ -134,13 +137,32 @@ export function Sidebar({ user }: { user: SidebarUser }) {
           <ThemeIcon />
           <span className={styles.grow}>{THEME_LABEL[pref]}</span>
         </button>
-        <button type="button" className={styles.item}>
+        <button
+          type="button"
+          className={styles.item}
+          disabled={!onBoard}
+          title={onBoard ? undefined : '請先開啟一個看板'}
+          onClick={() => dispatch(setDataMenuOpen(true))}
+        >
           <IconTransfer />
           <span className={styles.grow}>匯入／匯出</span>
         </button>
-        <button type="button" className={styles.item}>
+        <button
+          type="button"
+          className={styles.item}
+          disabled={reminders.permission === 'unsupported' || reminders.permission === 'denied' || reminders.permission === 'granted'}
+          title={reminders.permission === 'denied' ? '通知已被瀏覽器封鎖，請在網站設定中允許' : undefined}
+          onClick={() => void reminders.enable()}
+        >
           <IconBell />
-          <span className={styles.grow}>到期提醒</span>
+          {reminders.permission === 'unsupported' ? (
+            <span className={styles.grow}>此瀏覽器不支援通知</span>
+          ) : (
+            <>
+              <span className={styles.grow}>到期提醒</span>
+              <span className={styles.status}>{reminders.permission === 'granted' ? '已開啟' : '開啟'}</span>
+            </>
+          )}
         </button>
         <button type="button" className={styles.item} onClick={() => dispatch(setShortcutsOpen(true))}>
           <IconKeyboard />

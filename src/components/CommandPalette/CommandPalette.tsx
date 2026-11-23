@@ -7,8 +7,8 @@
 // ↑/↓ move the highlight, hover moves it, Enter runs it, Esc is the Modal's own. Enter on a task opens
 // `/b/<boardId>?task=<id>`. No match at all → 「找不到「q」— 按 ↵ 直接建立成新任務」 and Enter creates
 // the task from parseQuickAdd(q, today) on the current board (/focus: the first board) and opens it.
-// 匯出／匯入目前看板 and 開啟到期提醒 call `onExportImport` / `onReminders` (wired in Task 17); both are
-// disabled on /focus, which has no current board.
+// 匯出／匯入目前看板 and 開啟到期提醒 call `onExportImport` (opens the DataMenu dialog; disabled on /focus, which has no current
+// board) / `onReminders` (enables due-date reminders; works everywhere).
 import { Modal } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -106,7 +106,7 @@ function PaletteBody({ onExportImport, onReminders }: CommandPaletteProps) {
       { id: 'a-focus', group: 'action', label: '前往今日焦點', run: () => go('/focus') },
       { id: 'a-theme', group: 'action', label: '切換主題', run: () => { close(); setPref(nextTheme(pref)); } },
       { id: 'a-xfer', group: 'action', label: '匯出／匯入目前看板', disabled: noBoard, run: () => { close(); onExportImport(); } },
-      { id: 'a-remind', group: 'action', label: '開啟到期提醒', disabled: noBoard, run: () => { close(); onReminders(); } },
+      { id: 'a-remind', group: 'action', label: '開啟到期提醒', run: () => { close(); onReminders(); } },
       { id: 'a-undo', group: 'action', label: '復原', disabled: !canUndo, run: () => { close(); void undo(); } },
       ...boards.map<Item>((b) => ({
         id: `a-board-${b.id}`,

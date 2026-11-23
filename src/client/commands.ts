@@ -18,12 +18,14 @@
 //   with a batch restore). Toast 「已移動 N 筆」 (+「，M 筆因等待前置任務而略過」) / 「已刪除 N 筆」, where N
 //   counts only tasks whose status actually changed (the server also lists tasks that were already
 //   in the target status as updated); nothing moved and nothing skipped → 「沒有需要移動的任務」.
-// - loadSamples(boardId): creates SAMPLE_TASKS (dates relative to today, dependsOn mapped by title)
-//   in column order; undo = batch delete them; redo = batch restore.
+// - loadSamples(boardId): creates SAMPLE_TASKS (dates relative to today, dependsOn mapped by title to
+//   the newly created ids; a prerequisite is always created before its dependents). They go AFTER the
+//   board's existing tasks: each column continues from its current max position. One undo command:
+//   undo = batch delete them; redo = batch restore.
 import { useMemo } from 'react';
 import { addDays, todayISO } from '@/lib/dates';
 import { POSITION_STEP } from '@/lib/position';
-import { SAMPLE_TASKS } from '@/lib/sampleTasks';
+import { SAMPLE_TASKS, type SampleTask } from '@/lib/sampleTasks';
 import { columnTasks, indexById, openBlockers } from '@/lib/taskQueries';
 import type { Task, TaskStatus } from '@/lib/types';
 import {
@@ -252,12 +254,33 @@ export function useTaskCommands() {
     async function loadSamples(boardId: string): Promise<number> {
       const today = todayISO();
       const idByTitle = new Map<string, string>();
-      const perColumn: Record<TaskStatus, number> = { todo: 0, 'in-progress': 0, done: 0 };
-      const created: string[] = [];
+      const next: Partial<Record<TaskStatus, number>> = {};
+      for (const t of cached()) {
+        if (t.boardId !== boardId) continue;
+        next[t.status] = Math.max(next[t.status] ?? 0, t.position + POSITION_STEP);
+      }
+      // Prerequisites first (the API rejects an unknown dependsOn id); a sample that waits on a
+      // later one is simply created after it. Column positions still follow the list order.
+      const order: SampleTask[] = [];
+      const visit = (s: SampleTask, seen: Set<string>) => {
+        if (order.includes(s) || seen.has(s.title)) return;
+        seen.add(s.title);
+        for (const dep of s.dependsOnTitles ?? []) {
+          const d = SAMPLE_TASKS.find((x) => x.title === dep);
+          if (d) visit(d, seen);
+        }
+        order.push(s);
+      };
+      for (const s of SAMPLE_TASKS) visit(s, new Set());
+      const position = new Map<SampleTask, number>();
       for (const s of SAMPLE_TASKS) {
+        position.set(s, next[s.status] ?? 0);
+        next[s.status] = (next[s.status] ?? 0) + POSITION_STEP;
+      }
+      const created: string[] = [];
+      for (const s of order) {
         const id = crypto.randomUUID();
         idByTitle.set(s.title, id);
-        perColumn[s.status] += 1;
         try {
           await createTask({
             id,
@@ -270,7 +293,7 @@ export function useTaskCommands() {
             tags: s.tags,
             subtasks: s.subtasks.map((st) => ({ id: crypto.randomUUID(), ...st })),
             dependsOn: (s.dependsOnTitles ?? []).flatMap((t) => idByTitle.get(t) ?? []),
-            position: perColumn[s.status] * POSITION_STEP,
+            position: position.get(s)!,
           }).unwrap();
         } catch {
           break;

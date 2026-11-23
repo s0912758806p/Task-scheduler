@@ -55,9 +55,24 @@
     font-weight: 550;
   }
 
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+
+    &:hover {
+      background: transparent;
+      color: var(--text-2);
+    }
+  }
+
   @media (max-width: 767px) {
     min-height: 44px;
   }
+}
+
+.status {
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .search {

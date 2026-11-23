@@ -16,7 +16,10 @@ export function installFetch(handler: FetchHandler) {
       super(typeof input === 'string' ? new URL(input, 'http://localhost') : input, rest);
     }
   }
-  const fetchMock = vi.fn(async (req: Request) => handler(req));
+  // RTK Query passes a Request; plain `fetch('/api/…')` (e.g. the board export download) a string.
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
+    handler(input instanceof NodeRequest || input instanceof RelativeRequest ? input : new RelativeRequest(input, init)),
+  );
   vi.stubGlobal('Request', RelativeRequest);
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
