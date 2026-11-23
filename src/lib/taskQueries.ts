@@ -33,7 +33,8 @@ export function indexById(tasks: Task[]): Map<string, Task> {
   return new Map(tasks.map((t) => [t.id, t]));
 }
 
-export function openBlockers(task: Task, byId: Map<string, Task>): Task[] {
+/** Accepts any status + dependsOn pair, e.g. the detail panel's not-yet-created draft. */
+export function openBlockers(task: Pick<Task, 'status' | 'dependsOn'>, byId: Map<string, Task>): Task[] {
   if (task.status !== 'todo') return [];
   const out: Task[] = [];
   for (const id of task.dependsOn) {
@@ -43,7 +44,7 @@ export function openBlockers(task: Task, byId: Map<string, Task>): Task[] {
   return out;
 }
 
-export function isBlocked(task: Task, byId: Map<string, Task>): boolean {
+export function isBlocked(task: Pick<Task, 'status' | 'dependsOn'>, byId: Map<string, Task>): boolean {
   return openBlockers(task, byId).length > 0;
 }
 

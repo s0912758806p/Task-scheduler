@@ -120,3 +120,9 @@ export const IconLock = icon(
   </>,
 );
 export const IconCheck = icon(<path d="m5 12.5 4.5 4.5L19 7.5" />);
+export const IconTrash = icon(
+  <>
+    <path d="M4.5 7h15M10 11v6M14 11v6" />
+    <path d="M6.5 7l.8 11.2A2 2 0 0 0 9.3 20h5.4a2 2 0 0 0 2-1.8L17.5 7M9.5 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2" />
+  </>,
+);

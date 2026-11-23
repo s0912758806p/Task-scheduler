@@ -1,0 +1,354 @@
+// Detail panel (spec §9 tokens): panel big text 16, body 14, meta/labels 12–13 text-3, segmented
+// control 28px on surface-2 (radius 9), panel inputs radius 10 (AntD via a nested ConfigProvider),
+// buttons 28px desktop / ≥ 44px on phones. The dock is the non-modal right column (~360px).
+
+.dock {
+  flex: none;
+  width: 360px;
+  height: 100%;
+  overflow: auto;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+
+  @media (max-width: 767px) {
+    display: none;
+  }
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 20px 24px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.loading {
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--surface-2);
+}
+
+.segmentWrap {
+  display: inline-flex;
+}
+
+.segment {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 2px rgba(28, 27, 24, 0.08);
+  }
+
+  &:disabled {
+    color: var(--text-3);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+  }
+}
+
+%control {
+  height: 28px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+  }
+}
+
+.button {
+  @extend %control;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+
+  &:hover:not(:disabled) {
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
+}
+
+.danger {
+  color: var(--danger);
+
+  &:hover:not(:disabled) {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+}
+
+.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--on-accent);
+  }
+}
+
+.iconButton {
+  @extend %control;
+  width: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+
+  &:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  @media (max-width: 767px) {
+    width: 44px;
+  }
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  padding: 0 !important;
+  font-size: 16px !important;
+  font-weight: 600;
+  line-height: 1.45 !important;
+}
+
+.description {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.label {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.value {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.control {
+  width: 100%;
+}
+
+.priorityOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.p0 {
+  background: var(--p0);
+}
+.p1 {
+  background: var(--p1);
+}
+.p2 {
+  background: var(--p2);
+}
+.p3 {
+  background: var(--p3);
+}
+
+.subtasks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.subtaskHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.count {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.subtaskList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.subtask {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  border-bottom: 1px solid var(--border-soft);
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+  }
+}
+
+.subtaskLabel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.check {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.subtaskDone {
+  color: var(--text-3);
+  text-decoration: line-through;
+}
+
+.subtaskDelete {
+  @extend %control;
+  flex: none;
+  width: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+
+  &:hover {
+    background: var(--surface-2);
+    color: var(--danger);
+  }
+
+  @media (max-width: 767px) {
+    width: 44px;
+  }
+}
+
+.subtaskAdd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  color: var(--text-3);
+
+  @media (max-width: 767px) {
+    height: 44px;
+  }
+}
+
+.subtaskInput {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+
+  &::placeholder {
+    color: var(--text-3);
+  }
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px 20px;
+}
+
+.notFoundText {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
