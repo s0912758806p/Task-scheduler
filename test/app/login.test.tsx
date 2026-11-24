@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -99,7 +99,7 @@ describe('/login', () => {
   it('shows the account-not-linked message when Better Auth appends its code', async () => {
     await renderPage(['1', 'account_not_linked']);
     expect(screen.getByRole('alert').textContent).toBe(
-      '這個 email 已經用另一種方式註冊過，且尚未驗證，因此無法自動合併。請改用當初的方式登入。',
+      '這個 email 已經用另一種方式註冊過，且尚未驗證，因此無法自動合併。請改用當初的方式登入。如果你沒有用這個 email 註冊過，請聯絡管理者。',
     );
   });
 
@@ -207,6 +207,33 @@ describe('/login', () => {
       '這個 email 已經註冊過，請直接登入（如果當初是用 GitHub 或 Google，請按下方按鈕）',
     );
     expect(hardNavigate).not.toHaveBeenCalled();
+  });
+
+  it('keeps the form disabled after a successful submit so a second click sends nothing', async () => {
+    const user = userEvent.setup();
+    await renderPage();
+    await fillSignUp(user);
+    await user.click(submit('註冊'));
+    await waitFor(() => expect(hardNavigate).toHaveBeenCalledWith('/focus'));
+    // The full page load has not happened yet: the button must stay disabled.
+    expect(submit('註冊').disabled).toBe(true);
+    expect(screen.getByRole('button', { name: '使用 GitHub 登入' })).toHaveProperty('disabled', true);
+    await user.click(submit('註冊'));
+    fireEvent.submit(submit('註冊').form!);
+    expect(signUpEmail).toHaveBeenCalledTimes(1);
+    expect(hardNavigate).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-enables the form when the page comes back from the back/forward cache', async () => {
+    const user = userEvent.setup();
+    await renderPage();
+    await fillSignUp(user);
+    await user.click(submit('註冊'));
+    await waitFor(() => expect(submit('註冊').disabled).toBe(true));
+    act(() => {
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    });
+    expect(submit('註冊').disabled).toBe(false);
   });
 
   it('shows the mapped message and Retry-After for a 429', async () => {

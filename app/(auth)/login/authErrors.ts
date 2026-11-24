@@ -5,8 +5,10 @@
 // message; anything else, or no error object at all, the generic one.
 
 export const GENERIC_ERROR = '登入失敗，請再試一次。';
+// The last sentence is for someone whose email another person registered first (emails are not
+// verified); the admin checks ownership and releases the email (README 「登入與帳號連結」).
 export const NOT_LINKED_ERROR =
-  '這個 email 已經用另一種方式註冊過，且尚未驗證，因此無法自動合併。請改用當初的方式登入。';
+  '這個 email 已經用另一種方式註冊過，且尚未驗證，因此無法自動合併。請改用當初的方式登入。如果你沒有用這個 email 註冊過，請聯絡管理者。';
 
 const ALREADY_REGISTERED = '這個 email 已經註冊過，請直接登入（如果當初是用 GitHub 或 Google，請按下方按鈕）';
 const PASSWORD_LENGTH = '密碼需為 8 到 128 個字元';

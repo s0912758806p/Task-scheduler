@@ -16,18 +16,32 @@
 //   X-Retry-After (seconds). Rate limiting only applies to requests through auth.handler, not
 //   to direct auth.api calls.
 //   The user.create.before hook trims the name: email sign-ups with a blank or over-60-character
-//   name are rejected (400), OAuth users are repaired instead (normalizeUserName). Every newly
-//   created user gets an empty 「我的看板」 via the user.create.after hook; the nextCookies()
-//   plugin (must stay last) lets server actions/components set session cookies.
+//   name are rejected (400), OAuth users are repaired instead (normalizeUserName). Email sign-ups
+//   also have their image forced to null (the client's value is ignored) and are rejected with
+//   400 INVALID_EMAIL 「email 格式不正確」 when the email is over 254 characters.
+//   The user.update.before hook (checkUserUpdate) applies the same rules to later writes: on
+//   /update-user (the signed-in user's own profile endpoint) a name that is blank or over 60
+//   characters after trimming, or an image that is not null / an https:// URL of at most 2048
+//   characters, is rejected with 400; on any other path (Better Auth's own writes, e.g. an OAuth
+//   sign-in) nothing is rejected — the name is trimmed and cut to 60, a blank name or a bad image
+//   is left out so the stored value stays. Every newly created user gets an empty 「我的看板」 via
+//   the user.create.after hook; the nextCookies() plugin (must stay last) lets server
+//   actions/components set session cookies.
 // - getEnabledSocialProviders(env): the configured OAuth providers, github first; the login page
 //   uses it to decide which buttons to show.
-// - normalizeUserName(name, email, isEmailSignUp): the name rule above.
+// - normalizeUserName(name, email, isEmailSignUp): the create-time name rule above.
+// - isAllowedImage(image): the image rule above.
 // - getAuth(): the Better Auth instance, built on first call from process.env + getDb() and cached.
 //   Nothing is constructed at import time, so `next build` works without any env.
 // - getSessionUser(): current user from the request cookies (next/headers), or null.
 // - requireUser(): same, but throws ApiError(401, 'UNAUTHENTICATED') when signed out; every API
 //   handler calls it first.
-import { betterAuth, type BetterAuthOptions } from 'better-auth';
+import {
+  betterAuth,
+  type BetterAuthOptions,
+  type GenericEndpointContext,
+  type User,
+} from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError } from 'better-auth/api';
 import { nextCookies } from 'better-auth/next-js';
@@ -55,6 +69,10 @@ export function getEnabledSocialProviders(env: NodeJS.ProcessEnv): SocialProvide
 }
 
 const MAX_NAME_LENGTH = 60;
+const MAX_EMAIL_LENGTH = 254;
+const MAX_IMAGE_LENGTH = 2048;
+const NAME_ERROR = '名稱需為 1 到 60 個字';
+const IMAGE_ERROR = '頭像網址需為 https:// 開頭，最多 2048 個字元';
 
 /**
  * Trims a new user's name. Email sign-up: blank or over 60 characters → null (the caller
@@ -72,6 +90,39 @@ export function normalizeUserName(
   }
   if (trimmed.length === 0) return email.split('@')[0] ?? email;
   return trimmed.slice(0, MAX_NAME_LENGTH);
+}
+
+/** A profile image the user may set: null (no image) or an https URL of at most 2048 characters. */
+export function isAllowedImage(image: unknown): boolean {
+  return (
+    image === null ||
+    (typeof image === 'string' && image.startsWith('https://') && image.length <= MAX_IMAGE_LENGTH)
+  );
+}
+
+/**
+ * user.update.before: checks `name` / `image` when present (other fields pass through).
+ * On /update-user a bad value is rejected with 400; on any other path (Better Auth's own writes,
+ * e.g. during an OAuth sign-in) it is repaired instead — name trimmed and cut to 60, a blank name
+ * or a bad image dropped so the stored value stays.
+ */
+async function checkUserUpdate(
+  user: Partial<User> & Record<string, unknown>,
+  ctx: GenericEndpointContext | null,
+) {
+  const strict = ctx?.path === '/update-user';
+  const data: Partial<User> & Record<string, unknown> = { ...user };
+  if (user.name !== undefined) {
+    const trimmed = typeof user.name === 'string' ? user.name.trim() : '';
+    if (trimmed.length > 0 && trimmed.length <= MAX_NAME_LENGTH) data.name = trimmed;
+    else if (strict) throw new APIError('BAD_REQUEST', { message: NAME_ERROR });
+    else data.name = trimmed.length > 0 ? trimmed.slice(0, MAX_NAME_LENGTH) : undefined;
+  }
+  if (user.image !== undefined && !isAllowedImage(user.image)) {
+    if (strict) throw new APIError('BAD_REQUEST', { message: IMAGE_ERROR });
+    data.image = undefined;
+  }
+  return { data };
 }
 
 export function buildAuthOptions(env: NodeJS.ProcessEnv, db: DB): BetterAuthOptions {
@@ -115,16 +166,22 @@ export function buildAuthOptions(env: NodeJS.ProcessEnv, db: DB): BetterAuthOpti
       user: {
         create: {
           before: async (user, ctx) => {
-            const name = normalizeUserName(user.name, user.email, ctx?.path === '/sign-up/email');
-            if (name === null) {
-              throw new APIError('BAD_REQUEST', { message: '名稱需為 1 到 60 個字' });
+            const isEmailSignUp = ctx?.path === '/sign-up/email';
+            const name = normalizeUserName(user.name, user.email, isEmailSignUp);
+            if (name === null) throw new APIError('BAD_REQUEST', { message: NAME_ERROR });
+            if (!isEmailSignUp) return { data: { ...user, name } };
+            // Same code and text as Better Auth's own bad-email error (the login page maps it).
+            if (user.email.length > MAX_EMAIL_LENGTH) {
+              throw new APIError('BAD_REQUEST', { code: 'INVALID_EMAIL', message: 'email 格式不正確' });
             }
-            return { data: { ...user, name } };
+            // The sign-up form never sends an image; never store one a client made up.
+            return { data: { ...user, name, image: null } };
           },
           after: async (user) => {
             await ensureDefaultBoard(db, user.id);
           },
         },
+        update: { before: checkUserUpdate },
       },
     },
     plugins: [nextCookies()],

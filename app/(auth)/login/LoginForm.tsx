@@ -11,13 +11,15 @@
 //   new session cookie. Failures are mapped to Chinese by authErrorMessage (a 429 reads the
 //   X-Retry-After header) and shown under the form with role="alert".
 // - While a request is pending every button is disabled and further submits are ignored, so a
-//   double click sends once; they are re-enabled afterwards, even if the request throws. The Enter
-//   that confirms an IME composition does not submit (isImeEnter).
+//   double click sends once. After an error (or if the request throws) they are re-enabled; after a
+//   success they stay disabled until the browser leaves the page (a page restored from the
+//   back/forward cache re-enables them). The Enter that confirms an IME composition does not
+//   submit (isImeEnter).
 // - Below a 「或」 divider, one 「使用 … 登入」 button per configured OAuth provider (`providers`,
 //   from getEnabledSocialProviders); with none configured the divider is not rendered either.
 //   OAuth failures come back as /login?error=…: `authError` is 'account_not_linked' (Better Auth
 //   refused to merge with an unverified account) or 'generic'.
-import { useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { signIn, signUp } from '@/client/authClient';
 import { hardNavigate } from '@/client/navigate';
 import { isImeEnter } from '@/lib/ime';
@@ -73,17 +75,35 @@ export default function LoginForm({
     retryAfter.current = null;
     setPending(true);
     setError(null);
+    let failed = true;
     try {
       const { error } = await action();
       if (error) setError(authErrorMessage(error, retryAfter.current));
-      else onSuccess?.();
+      else {
+        failed = false;
+        onSuccess?.();
+      }
     } catch {
       setError(GENERIC_ERROR);
     } finally {
-      pendingRef.current = false;
-      setPending(false);
+      // On success the browser is about to leave the page: stay disabled until it does.
+      if (failed) {
+        pendingRef.current = false;
+        setPending(false);
+      }
     }
   }
+
+  // Back/forward cache: a page restored after a successful submit comes back still disabled.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      pendingRef.current = false;
+      setPending(false);
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, []);
 
   function switchMode(next: Mode) {
     if (next === mode) return;

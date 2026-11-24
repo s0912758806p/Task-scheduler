@@ -1,5 +1,7 @@
 # Email／密碼登入 設計文件
 
+> ⚠ 已被最終審查修正（final review fix，commit「fix(auth): cap sign-up and update-user input …」）補充：§5.3 的 `account_not_linked` 訊息末尾加上「如果你沒有用這個 email 註冊過，請聯絡管理者。」；§5.1 另加 email 註冊不收頭像、email 最多 254 字元，以及 `user.update.before` 對 `/update-user` 的名稱／頭像檢查（2026-11-24）
+
 - 日期：2026-11-24
 - 狀態：草稿，待確認
 - 分支：`feat/focus-cockpit-redesign`（PR #7 合併前一起上線）

@@ -206,6 +206,36 @@ describe('email/password (Better Auth on PGlite)', () => {
     expect(row?.name).toBe('小明');
   });
 
+  it('ignores the image a sign-up sends: it is stored as null', async () => {
+    const { user } = await newAuth().api.signUpEmail({
+      body: {
+        name: '小明',
+        email: uniqueEmail(),
+        password,
+        image: `https://example.test/${'x'.repeat(100 * 1024)}`,
+      },
+    });
+    const [row] = await db.select().from(userTable).where(eq(userTable.id, user.id));
+    expect(row?.image).toBeNull();
+  });
+
+  it('rejects emails over 254 characters, accepts 254', async () => {
+    const auth = newAuth();
+    const domain = '@example.test';
+    const long = `${randomUUID()}${'a'.repeat(255 - 36 - domain.length)}${domain}`;
+    expect(long).toHaveLength(255);
+    const error = await apiError(auth.api.signUpEmail({ body: { name: 'A', email: long, password } }));
+    expect(error.statusCode).toBe(400);
+    expect(error.body?.code).toBe('INVALID_EMAIL');
+    expect(error.body?.message).toBe('email 格式不正確');
+    expect(await db.select().from(userTable).where(eq(userTable.email, long))).toEqual([]);
+
+    const ok = `${randomUUID()}${'a'.repeat(254 - 36 - domain.length)}${domain}`;
+    expect(ok).toHaveLength(254);
+    const { user } = await auth.api.signUpEmail({ body: { name: 'A', email: ok, password } });
+    expect(user.email).toBe(ok);
+  });
+
   it('normalizeUserName trims, rejects bad email sign-up names, repairs OAuth names', () => {
     const e = 'amy@example.test';
     expect(normalizeUserName('  小明 ', e, true)).toBe('小明');
@@ -213,6 +243,81 @@ describe('email/password (Better Auth on PGlite)', () => {
     expect(normalizeUserName('x'.repeat(61), e, true)).toBeNull();
     expect(normalizeUserName('x'.repeat(61), e, false)).toBe('x'.repeat(60));
     expect(normalizeUserName('  ', 'amy@example.test', false)).toBe('amy');
+  });
+});
+
+describe('profile updates (user.update.before)', () => {
+  const password = 'correct-horse-battery';
+  const newAuth = () => betterAuth(buildAuthOptions({ ...baseEnv, NODE_ENV: 'test' }, db));
+  type Auth = ReturnType<typeof newAuth>;
+
+  /** Signs up a fresh user and returns its id plus the session cookie header. */
+  async function signedUp(auth: Auth) {
+    const { headers, response } = await auth.api.signUpEmail({
+      body: { name: '原本', email: `upd-${randomUUID()}@example.test`, password },
+      returnHeaders: true,
+    });
+    const cookie = headers
+      .getSetCookie()
+      .map((c) => c.split(';')[0])
+      .join('; ');
+    return { id: response.user.id, headers: new Headers({ cookie }) };
+  }
+  const row = async (id: string) =>
+    (await db.select().from(userTable).where(eq(userTable.id, id)))[0];
+
+  it('rejects a blank or 61-character name with 400 and keeps the old one', async () => {
+    const auth = newAuth();
+    const { id, headers } = await signedUp(auth);
+    for (const name of ['x'.repeat(61), '   ']) {
+      const error = await apiError(auth.api.updateUser({ body: { name }, headers }));
+      expect(error.statusCode).toBe(400);
+      expect(error.body?.message).toBe('名稱需為 1 到 60 個字');
+    }
+    expect((await row(id))?.name).toBe('原本');
+  });
+
+  it('stores the trimmed name', async () => {
+    const auth = newAuth();
+    const { id, headers } = await signedUp(auth);
+    await auth.api.updateUser({ body: { name: '  新名字 ' }, headers });
+    expect((await row(id))?.name).toBe('新名字');
+  });
+
+  it('accepts only https image URLs up to 2048 characters (or null)', async () => {
+    const auth = newAuth();
+    const { id, headers } = await signedUp(auth);
+    const tooLong = `https://example.test/${'x'.repeat(2048)}`;
+    for (const image of ['javascript:alert(1)', 'http://example.test/a.png', tooLong]) {
+      const error = await apiError(auth.api.updateUser({ body: { image }, headers }));
+      expect(error.statusCode).toBe(400);
+    }
+    expect((await row(id))?.image).toBeNull();
+
+    const ok = `https://example.test/${'x'.repeat(2048 - 'https://example.test/'.length)}`;
+    expect(ok).toHaveLength(2048);
+    await auth.api.updateUser({ body: { image: ok }, headers });
+    expect((await row(id))?.image).toBe(ok);
+    await auth.api.updateUser({ body: { image: null }, headers });
+    expect((await row(id))?.image).toBeNull();
+  });
+
+  it('never rejects updates outside /update-user (OAuth sign-in): repairs or drops instead', async () => {
+    const auth = newAuth();
+    const { id } = await signedUp(auth);
+    const { internalAdapter } = await auth.$context;
+    // No endpoint context here, like Better Auth's own writes during an OAuth callback.
+    await internalAdapter.updateUser(id, { name: 'y'.repeat(61) });
+    expect((await row(id))?.name).toBe('y'.repeat(60));
+    await internalAdapter.updateUser(id, { name: '   ', image: 'javascript:alert(1)' });
+    expect(await row(id)).toMatchObject({ name: 'y'.repeat(60), image: null });
+
+    const before = buildAuthOptions({ ...baseEnv, NODE_ENV: 'test' }, db).databaseHooks?.user
+      ?.update?.before;
+    const ctx = { path: '/callback/github' } as Parameters<NonNullable<typeof before>>[1];
+    await expect(before?.({ name: ` ${'z'.repeat(70)} ` }, ctx)).resolves.toEqual({
+      data: { name: 'z'.repeat(60) },
+    });
   });
 });
 
@@ -234,7 +339,7 @@ describe('rate limiting (HTTP handler)', () => {
       password: 'whatever-pw',
     });
 
-  it('locks one IP after 5 sign-in attempts in 60 s', async () => {
+  it('locks one IP after 5 sign-in attempts in 60 s; another IP is still let through', async () => {
     const statuses: number[] = [];
     for (let i = 0; i < 5; i++) statuses.push((await signIn('203.0.113.7')).status);
     expect(statuses).toEqual([401, 401, 401, 401, 401]);
@@ -245,9 +350,8 @@ describe('rate limiting (HTTP handler)', () => {
 
     const rows = await db.select().from(rateLimit);
     expect(rows.some((r) => r.key.includes('203.0.113.7'))).toBe(true);
-  });
 
-  it('counts each IP separately', async () => {
+    // Checked while 203.0.113.7 is locked, so this cannot pass just because nothing is locked.
     expect((await signIn('203.0.113.8')).status).toBe(401);
   });
 
