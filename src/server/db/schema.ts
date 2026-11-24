@@ -1,15 +1,20 @@
 // Drizzle schema (Postgres). Application tables: boards, tasks (spec §6.2).
-// The Better Auth tables (user, session, account, verification) mirror the Drizzle schema
-// Better Auth 1.7 generates for our options (its drizzle generator, same as `@better-auth/cli
-// generate`): same columns, nullability, defaults and indexes (index names as Better Auth emits
-// them). Deliberate difference: timestamps are `timestamptz` instead of `timestamp`.
+// The Better Auth tables (user, session, account, verification, rate_limit) mirror the Drizzle
+// schema Better Auth 1.7 generates for our options (its drizzle generator, same as
+// `@better-auth/cli generate`): same columns, nullability, defaults and indexes (index names as
+// Better Auth emits them). Deliberate difference: timestamps are `timestamptz`, not `timestamp`.
 // Better Auth validates these tables at runtime (advanced.database.validateSchema, on by default).
+// rate_limit holds Better Auth's per-IP, per-path attempt counters (rateLimit.storage: 'database',
+// see src/server/auth.ts). The export must be named `rateLimit`: drizzleAdapter looks tables up
+// by Better Auth model name.
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   doublePrecision,
   date,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -90,6 +95,14 @@ export const verification = pgTable(
   },
   (t) => [index('verification_identifier_idx').on(t.identifier)],
 );
+
+// Mirrors Better Auth's rateLimit model: key = "<ip>|<path>", lastRequest = epoch milliseconds.
+export const rateLimit = pgTable('rate_limit', {
+  id: text('id').primaryKey(),
+  key: text('key').notNull().unique(),
+  count: integer('count').notNull(),
+  lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
+});
 
 // DB enum uses `in_progress`; the API exposes `in-progress` (mapped in the service layer).
 export const taskStatus = pgEnum('task_status', ['todo', 'in_progress', 'done']);

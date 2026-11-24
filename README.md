@@ -76,7 +76,7 @@ test/  e2e/     Vitest 單元與 API 測試、Playwright 端對端測試
 - **密鑰不進版本庫。** 所有連線字串與 OAuth 密鑰只放在環境變數：本機在 `.env.local`（`.env*.local` 已被 `.gitignore` 排除），正式環境在 Vercel 專案設定。版本庫裡只有不含任何值的 `.env.example`。不要把真實的值寫進 README、issue、PR 或截圖。
 - **每個人只看得到自己的資料。** 每個 API 都先確認登入（未登入回 401），所有資料庫查詢都以登入者的 id 篩選；別人的看板或任務 id 一律當作不存在。
 - **帳號合併要已驗證的 email。** GitHub 與 Google 回報相同 email、且雙方都標示已驗證時才視為同一人，避免用未驗證的 email 接管別人的帳號（見下方「登入與帳號連結」）。
-- **測試用的密碼登入在正式環境永遠關閉。** `E2E_AUTH=1` 只在 `NODE_ENV` 不是 `production` 時生效，Vercel 上也不要設定它。
+- **密碼登入有嘗試次數限制。** 伺服器在所有環境都接受 email／密碼註冊與登入（密碼 8–128 字元、不驗證 email，因此不會和 GitHub／Google 帳號自動合併）；同一個 IP 每 60 秒最多登入 5 次、註冊 3 次，超過回 429，計數存在資料庫的 `rate_limit` 表。登入頁的密碼表單目前仍只在 `E2E_AUTH=1` 時顯示，Vercel 上不要設定它。
 - **輸入一律檢查。** API 的請求內容都經過 zod 驗證並限制長度與數量；登入後的跳轉只接受站內路徑，避免被利用成開放式重新導向。
 - **預覽部署受保護。** Vercel 的 Preview 網址開啟了部署保護，只有專案成員能看。
 
@@ -108,9 +108,9 @@ test/  e2e/     Vitest 單元與 API 測試、Playwright 端對端測試
 | `DATABASE_URL` | Neon 的 Postgres 連線字串。資料庫驅動 `@neondatabase/serverless` 走 Neon 的 WebSocket，一般本機 Postgres 連不上；`npm test` 用 PGlite，不需要 |
 | `BETTER_AUTH_SECRET` | 簽署登入 session 的密鑰，以 `openssl rand -base64 32` 產生；Production 與 Preview 各用一組 |
 | `BETTER_AUTH_URL` | 網站的公開網址：本機 `http://localhost:3000`，正式環境 `https://task-scheduler-rouge-gr925.vercel.app` |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth App |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth 用戶端 |
-| `E2E_AUTH` | 設為 `1` 時（且 `NODE_ENV` 不是 `production`）啟用 email／密碼登入，僅供 Playwright 使用；正式環境不要設定 |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth App；選填，兩個都有值才啟用 GitHub 登入 |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth 用戶端；選填，兩個都有值才啟用 Google 登入 |
+| `E2E_AUTH` | 設為 `1` 時（且 `NODE_ENV` 不是 `production`）登入頁顯示 email／密碼表單，僅供 Playwright 使用；正式環境不要設定。伺服器端的密碼登入不受它影響 |
 
 Vercel 的 Neon 整合還會加上 `POSTGRES_*`、`PG*`、`NEON_*` 等變數，本專案沒有用到，保留即可。
 
@@ -156,7 +156,7 @@ Preview 網址每次部署都不同，GitHub／Google 只接受登記過的 call
 
 ## 登入與帳號連結
 
-只提供 GitHub 與 Google 登入。兩邊回報**相同的 email、且都標示為已驗證**時，視為同一個帳號（同一份看板）；否則不會自動合併，這次登入會被拒絕並帶回登入頁，顯示「這個 email 已經用另一種方式登入過，且尚未驗證，因此無法自動合併。」。email 在使用者表中唯一，所以不會另建第二個帳號。
+登入頁目前只提供 GitHub 與 Google 登入（有設定的才顯示）；伺服器另外接受 email／密碼帳號，這類帳號的 email 未驗證，所以不會和 GitHub／Google 自動合併。GitHub 與 Google 兩邊回報**相同的 email、且都標示為已驗證**時，視為同一個帳號（同一份看板）；否則不會自動合併，這次登入會被拒絕並帶回登入頁，顯示「這個 email 已經用另一種方式登入過，且尚未驗證，因此無法自動合併。」。email 在使用者表中唯一，所以不會另建第二個帳號。
 
 ## 技術棧
 
