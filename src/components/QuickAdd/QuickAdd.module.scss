@@ -1,0 +1,63 @@
+// Quick-add box: dashed border-strong frame on surface, radius 10, parsed chips in accent-soft.
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+
+  &:focus-within {
+    border-style: solid;
+    border-color: var(--accent);
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-3);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+
+  &::placeholder {
+    color: var(--text-3);
+  }
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+    font-size: 16px; // no iOS zoom on focus
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.hint {
+  color: var(--text-3);
+  font-size: 11.5px;
+}

@@ -1,0 +1,64 @@
+// App frame: fixed-width sidebar + scrolling content column. < 768px: sidebar hidden (Drawer),
+// a top bar with the hamburger appears.
+.shell {
+  height: 100vh;
+  display: flex;
+  background: var(--bg);
+}
+
+.desktopSidebar {
+  flex: none;
+  height: 100%;
+}
+
+.column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileBar {
+  display: none;
+}
+
+.main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px 28px;
+}
+
+.hamburger {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface-2);
+  }
+}
+
+@media (max-width: 767px) {
+  .desktopSidebar {
+    display: none;
+  }
+
+  .mobileBar {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--side);
+  }
+
+  .main {
+    padding: 16px;
+  }
+}

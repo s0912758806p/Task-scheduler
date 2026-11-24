@@ -1,0 +1,197 @@
+// Board page layout: header, stats strip, then the three columns (14px gap; they wrap to fewer
+// per row below ~720px of content width). Also the empty-board panel, not-found state and the
+// phone segmented control and floating button, loading skeleton (column background + surface-2 blocks, slight pulse).
+.board {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  // Phones: room under the last card for the floating 新增任務 button (56 + 16 + 16).
+  @media (max-width: 767px) {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+// ---- phone: segmented control (surface-2 track, 38px tabs padded to 44 tap targets) + FAB ----
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.tab {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.tabInner {
+  width: 100%;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  white-space: nowrap;
+}
+
+.tab[aria-selected='true'] .tabInner {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(28, 27, 24, 0.08);
+  color: var(--text);
+  font-weight: 650;
+}
+
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 6px 16px rgba(28, 27, 24, 0.22);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+
+.emptyBoard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.sampleButton {
+  height: 34px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+  }
+}
+
+.message {
+  margin: 0;
+  color: var(--text-2);
+}
+
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.notFoundTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.link {
+  color: var(--accent-text);
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// ---- skeleton ----
+
+@keyframes pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+%block {
+  border-radius: 10px;
+  background: var(--surface-2);
+  animation: pulse 1.8s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.skeletonTitle {
+  @extend %block;
+  width: 220px;
+  height: 44px;
+}
+
+.skeletonStrip {
+  @extend %block;
+  height: 46px;
+  border-radius: 12px;
+}
+
+.skeletonColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--column);
+}
+
+.skeletonCard {
+  @extend %block;
+  height: 78px;
+  border-radius: 12px;
+}

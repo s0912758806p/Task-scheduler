@@ -1,0 +1,83 @@
+// Design tokens (spec §9 table, values verbatim). Light on :root, dark on [data-theme=dark].
+// The `theme` cookie decides the attribute on <html>: light → data-theme="light", dark →
+// data-theme="dark", system → no attribute, so the prefers-color-scheme block below applies
+// (guarded by :root:not([data-theme]) so an explicit choice always wins).
+// Mirror of the AntD subset: src/client/tokens.ts — keep both in sync.
+
+@mixin light {
+  color-scheme: light;
+  --bg: #f7f7f5;
+  --side: #f1f0ec;
+  --surface: #ffffff;
+  --surface-2: #f3f2ee;
+  --column: #eeede8;
+  --border: #e3e1db;
+  --border-soft: #eeece7;
+  --border-strong: #cfccc4;
+  --text: #1c1b18;
+  --text-2: #4f4d47;
+  --text-3: #6b6963;
+  --accent: #4f46e5;
+  --accent-soft: #eef0ff;
+  --accent-text: #4338ca;
+  --on-accent: #ffffff;
+  --danger: #b91c1c;
+  --danger-soft: #fdecec;
+  --warn: #c2410c;
+  --warn-soft: #fff1e7;
+  --ok: #15803d;
+  --toast-bg: #1c1b18;
+  --toast-fg: #f7f7f5;
+  --toast-action: #a5b4fc;
+  --overlay: rgba(20, 20, 19, 0.38);
+}
+
+@mixin dark {
+  color-scheme: dark;
+  --bg: #141413;
+  --side: #1a1a18;
+  --surface: #21211f;
+  --surface-2: #2a2a27;
+  --column: #1a1a18;
+  --border: #363531;
+  --border-soft: #2c2b28;
+  --border-strong: #4a4944;
+  --text: #ecebe6;
+  --text-2: #c3c1b9;
+  --text-3: #9d9b93;
+  --accent: #818cf8;
+  --accent-soft: rgba(129, 140, 248, 0.16);
+  --accent-text: #a5b4fc;
+  --on-accent: #141413;
+  --danger: #fca5a5;
+  --danger-soft: rgba(239, 68, 68, 0.16);
+  --warn: #fdba74;
+  --warn-soft: rgba(249, 115, 22, 0.16);
+  --ok: #86efac;
+  --toast-bg: #ecebe6;
+  --toast-fg: #141413;
+  --toast-action: #4338ca;
+  --overlay: rgba(0, 0, 0, 0.55);
+}
+
+:root {
+  @include light;
+
+  // Priority dots: identical in both themes (0 緊急, 1 高, 2 中, 3 低).
+  --p0: #dc2626;
+  --p1: #ea580c;
+  --p2: #0d9488;
+  --p3: #a8a29e;
+
+  --sidebar-width: 232px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    @include dark;
+  }
+}
+
+[data-theme='dark'] {
+  @include dark;
+}

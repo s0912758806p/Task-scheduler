@@ -1,0 +1,226 @@
+// Board top bar: title 22/650, sub 13 text-3; toolbar buttons 34px high, radius 9 (≥44px on
+// mobile). Also styles the filter popover's panel (FilterPanel).
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.heading {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.sub {
+  margin: 2px 0 0;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+%control {
+  height: 34px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+  }
+}
+
+.button {
+  @extend %control;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+
+  &:hover:not(:disabled) {
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
+}
+
+.danger {
+  color: var(--danger);
+
+  &:hover:not(:disabled) {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+}
+
+.iconButton {
+  @extend %control;
+  width: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+
+  @media (max-width: 767px) {
+    width: 44px;
+  }
+}
+
+.primary {
+  @extend %control;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 10px;
+  border: 0;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.kbd {
+  padding: 0 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.18);
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.badge {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: var(--border);
+}
+
+.selected {
+  padding: 0 4px;
+  color: var(--accent-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+// ---- filter popover ----
+
+.filterPanel {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fieldLabel {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.clearFilters {
+  align-self: flex-end;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--accent-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+// ---- phone header: ☰ 看板名稱▾ 🔍 ----
+
+.mobileBar {
+  display: flex;
+  align-items: center;
+  flex: 1 1 100%;
+  min-width: 0;
+  gap: 4px;
+}
+
+.barIcon {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.mobileTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.boardButton {
+  max-width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.boardName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
