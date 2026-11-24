@@ -1,5 +1,6 @@
-// Signs up a fresh email/password test account (E2E_AUTH=1 enables it on the dev server) and saves
-// the session cookie to e2e/.auth/state.json for every test. A new user gets an empty 「我的看板」.
+// Signs up a fresh email/password test account (the server always accepts email/password; E2E_AUTH
+// only makes the login page show the form) and saves the session cookie to e2e/.auth/state.json
+// for every test. A new user gets an empty 「我的看板」.
 // Does nothing without DATABASE_URL (the whole suite skips then).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { request, type FullConfig } from '@playwright/test';

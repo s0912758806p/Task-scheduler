@@ -1,5 +1,5 @@
 // /login (spec §8). Server wrapper: reads ?next= (kept only if it is a same-origin relative path,
-// else /focus) and whether E2E email/password login is enabled, then renders the client-side
+// else /focus) and whether to show the E2E email/password form, then renders the client-side
 // LoginForm with the GitHub / Google buttons. A failed OAuth round trip returns here as
 // /login?error=1&error=<code> (Better Auth appends its code to our errorCallbackURL), so `error`
 // may be a string or an array: 'account_not_linked' gets its own message, anything else the generic one.
