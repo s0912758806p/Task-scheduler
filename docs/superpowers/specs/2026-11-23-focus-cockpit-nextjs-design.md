@@ -1,3 +1,5 @@
+> ⚠ 已被 2026-11-24-email-password-login-design.md 推翻：§8「只提供 GitHub 與 Google 登入」不再成立（2026-11-24）
+
 # Task Scheduler v2 — Focus Cockpit × Next.js 設計文件
 
 - 日期：2026-11-23
