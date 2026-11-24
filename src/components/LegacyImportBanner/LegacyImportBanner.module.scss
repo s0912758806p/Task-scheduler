@@ -1,0 +1,58 @@
+// Slim strip above the page content; tokens from spec §9.
+.banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 10px 28px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 14px;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.primary,
+.secondary {
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+  }
+}
+
+.primary {
+  border: 0;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.secondary {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+}
+
+@media (max-width: 767px) {
+  .banner {
+    padding: 10px 16px;
+  }
+}

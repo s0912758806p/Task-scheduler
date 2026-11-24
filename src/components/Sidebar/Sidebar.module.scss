@@ -1,0 +1,267 @@
+// Sidebar (spec §9): 232px, side background, 4px spacing grid, 13–14px text, 9px control radius.
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 12px 12px;
+  background: var(--side);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 12px;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.item {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  &[aria-current='page'] {
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    font-weight: 550;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+
+    &:hover {
+      background: transparent;
+      color: var(--text-2);
+    }
+  }
+
+  @media (max-width: 767px) {
+    min-height: 44px;
+  }
+}
+
+.status {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.search {
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: 13px;
+
+  &:hover {
+    background: var(--surface);
+    border-color: var(--border-strong);
+    color: var(--text-2);
+  }
+}
+
+.kbd {
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.badge,
+.count {
+  min-width: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.badge {
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.count {
+  color: var(--text-3);
+}
+
+.sectionTitle {
+  padding: 16px 10px 4px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.boards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.boardRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .more {
+    position: absolute;
+    right: 4px;
+    opacity: 0;
+  }
+
+  &:hover .more,
+  .more:focus-visible,
+  .more[aria-expanded='true'] {
+    opacity: 1;
+  }
+
+  // Make room for ⋯ next to the count while it is visible.
+  &:hover .count {
+    visibility: hidden;
+  }
+
+  @media (hover: none) {
+    .more {
+      opacity: 1;
+    }
+
+    .count {
+      margin-right: 32px;
+    }
+  }
+}
+
+.more {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--border-soft);
+    color: var(--text);
+  }
+}
+
+.renameInput {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  outline: 3px solid var(--accent-soft);
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.userPopup {
+  min-width: 200px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(28, 27, 24, 0.12);
+  overflow: hidden;
+
+  :global(.ant-dropdown-menu) {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+.userEmail {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.avatar {
+  flex: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 12px;
+}
+
+.shortcuts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcutRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  dt {
+    width: 140px;
+    flex: none;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 14px;
+  }
+}
+
+.shortcutNote {
+  margin: 16px 0 0;
+  color: var(--text-3);
+  font-size: 12px;
+}
