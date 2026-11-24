@@ -1,6 +1,6 @@
 # Email／密碼登入 設計文件
 
-> ⚠ 已被最終審查修正（final review fix，commit「fix(auth): cap sign-up and update-user input …」）補充：§5.3 的 `account_not_linked` 訊息末尾加上「如果你沒有用這個 email 註冊過，請聯絡管理者。」；§5.1 另加 email 註冊不收頭像、email 最多 254 字元，以及 `user.update.before` 對 `/update-user` 的名稱／頭像檢查（2026-11-24）
+> ⚠ 已被 648378c 推翻：§5.3 的 `account_not_linked` 訊息不再是原文，末尾加上「如果你沒有用這個 email 註冊過，請聯絡管理者。」；§5.1 不再只有建立時檢查名稱，email／密碼註冊另會忽略頭像、拒絕超過 254 字元的 email，`user.update.before` 也會檢查 `/update-user` 的名稱與頭像（2026-11-24）
 
 - 日期：2026-11-24
 - 狀態：草稿，待確認
