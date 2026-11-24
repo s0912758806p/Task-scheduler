@@ -24,8 +24,6 @@
 // - normalizeUserName(name, email, isEmailSignUp): the name rule above.
 // - getAuth(): the Better Auth instance, built on first call from process.env + getDb() and cached.
 //   Nothing is constructed at import time, so `next build` works without any env.
-// - isE2EAuthEnabled(env): legacy switch kept only because the login page still uses it to show
-//   its email form; it no longer affects emailAndPassword. Removed in the login-page task.
 // - getSessionUser(): current user from the request cookies (next/headers), or null.
 // - requireUser(): same, but throws ApiError(401, 'UNAUTHENTICATED') when signed out; every API
 //   handler calls it first.
@@ -40,11 +38,6 @@ import { ApiError } from '@/server/errors';
 import { ensureDefaultBoard } from '@/server/services/boards';
 
 export type SessionUser = { id: string; email: string; name: string; image: string | null };
-
-/** Legacy E2E switch, still read by the login page; does not affect emailAndPassword. */
-export function isE2EAuthEnabled(env: NodeJS.ProcessEnv): boolean {
-  return env.NODE_ENV !== 'production' && env.E2E_AUTH === '1';
-}
 
 export type SocialProvider = 'github' | 'google';
 

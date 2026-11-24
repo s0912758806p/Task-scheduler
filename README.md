@@ -76,7 +76,7 @@ test/  e2e/     Vitest 單元與 API 測試、Playwright 端對端測試
 - **密鑰不進版本庫。** 所有連線字串與 OAuth 密鑰只放在環境變數：本機在 `.env.local`（`.env*.local` 已被 `.gitignore` 排除），正式環境在 Vercel 專案設定。版本庫裡只有不含任何值的 `.env.example`。不要把真實的值寫進 README、issue、PR 或截圖。
 - **每個人只看得到自己的資料。** 每個 API 都先確認登入（未登入回 401），所有資料庫查詢都以登入者的 id 篩選；別人的看板或任務 id 一律當作不存在。
 - **帳號合併要已驗證的 email。** GitHub 與 Google 回報相同 email、且雙方都標示已驗證時才視為同一人，避免用未驗證的 email 接管別人的帳號（見下方「登入與帳號連結」）。
-- **密碼登入有嘗試次數限制。** 伺服器在所有環境都接受 email／密碼註冊與登入（密碼 8–128 字元、不驗證 email，因此不會和 GitHub／Google 帳號自動合併）；同一個 IP 每 60 秒最多登入 5 次、註冊 3 次，超過回 429，計數存在資料庫的 `rate_limit` 表。登入頁的密碼表單目前仍只在 `E2E_AUTH=1` 時顯示，Vercel 上不要設定它。
+- **密碼登入有嘗試次數限制。** 伺服器在所有環境都接受 email／密碼註冊與登入（密碼 8–128 字元、不驗證 email，因此不會和 GitHub／Google 帳號自動合併）；同一個 IP 每 60 秒最多登入 5 次、註冊 3 次，超過回 429，計數存在資料庫的 `rate_limit` 表。登入頁一律提供「登入／註冊」email／密碼表單，送出前會先檢查名稱（1–60 字）、密碼長度與兩次密碼是否相同。
 - **輸入一律檢查。** API 的請求內容都經過 zod 驗證並限制長度與數量；登入後的跳轉只接受站內路徑，避免被利用成開放式重新導向。
 - **預覽部署受保護。** Vercel 的 Preview 網址開啟了部署保護，只有專案成員能看。
 
@@ -110,7 +110,6 @@ test/  e2e/     Vitest 單元與 API 測試、Playwright 端對端測試
 | `BETTER_AUTH_URL` | 網站的公開網址：本機 `http://localhost:3000`，正式環境 `https://task-scheduler-rouge-gr925.vercel.app` |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth App；選填，兩個都有值才啟用 GitHub 登入 |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth 用戶端；選填，兩個都有值才啟用 Google 登入 |
-| `E2E_AUTH` | 設為 `1` 時（且 `NODE_ENV` 不是 `production`）登入頁顯示 email／密碼表單，僅供 Playwright 使用；正式環境不要設定。伺服器端的密碼登入不受它影響 |
 
 Vercel 的 Neon 整合還會加上 `POSTGRES_*`、`PG*`、`NEON_*` 等變數，本專案沒有用到，保留即可。
 
@@ -156,7 +155,7 @@ Preview 網址每次部署都不同，GitHub／Google 只接受登記過的 call
 
 ## 登入與帳號連結
 
-登入頁目前一律顯示 GitHub 與 Google 按鈕，但伺服器只啟用 client id 與 secret 都有設定的那一個；伺服器另外接受 email／密碼帳號，這類帳號的 email 未驗證，所以不會和 GitHub／Google 自動合併。GitHub 與 Google 兩邊回報**相同的 email、且都標示為已驗證**時，視為同一個帳號（同一份看板）；否則不會自動合併，這次登入會被拒絕並帶回登入頁，顯示「這個 email 已經用另一種方式登入過，且尚未驗證，因此無法自動合併。」。email 在使用者表中唯一，所以不會另建第二個帳號。
+登入頁一律有 email／密碼的「登入／註冊」分頁；GitHub 與 Google 按鈕只在該 provider 的 client id 與 secret 都有設定時顯示（都沒設定時連「或」分隔線都不出現）。email／密碼帳號的 email 未驗證，所以不會和 GitHub／Google 自動合併。GitHub 與 Google 兩邊回報**相同的 email、且都標示為已驗證**時，視為同一個帳號（同一份看板）；否則不會自動合併，這次登入會被拒絕並帶回登入頁，顯示「這個 email 已經用另一種方式註冊過，且尚未驗證，因此無法自動合併。請改用當初的方式登入。」。email 在使用者表中唯一，所以不會另建第二個帳號。
 
 ## 技術棧
 
