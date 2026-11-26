@@ -1,3 +1,8 @@
+# Opens a PR <branch> → dev for every pushed feature branch, using the bot PAT (BOT_PAT_TOKEN) so
+# the PR is authored by the bot and auto-pr-maintenance.yml can approve/auto-merge it.
+# Checkout uses the built-in GITHUB_TOKEN (reading the repo needs no PAT). If BOT_PAT_TOKEN is
+# missing or rejected (expired/revoked), the job logs a warning and skips PR creation instead of
+# failing — rotate the secret to bring auto-PRs back.
 name: Auto Pull Request
 on:
   push:
@@ -18,10 +23,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.BOT_PAT_TOKEN }}
+
+      - name: Check Bot Token
+        id: bot-token
+        run: |
+          if gh api "repos/${{ github.repository }}" --silent 2>/dev/null; then
+            echo "ok=true" >> $GITHUB_OUTPUT
+          else
+            echo "ok=false" >> $GITHUB_OUTPUT
+            echo "::warning title=BOT_PAT_TOKEN::BOT_PAT_TOKEN is missing or invalid (expired/revoked); skipping auto PR. Rotate the repository secret to re-enable it."
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.BOT_PAT_TOKEN }}
 
       - name: Extract Branch Info
         id: branch-info
@@ -43,6 +59,7 @@ jobs:
           echo "message=$(git log -1 --pretty=format:'%s')" >> $GITHUB_OUTPUT
 
       - name: Check if PR Exists
+        if: steps.bot-token.outputs.ok == 'true'
         id: check-pr
         run: |
           PR_EXISTS=$(gh pr list --repo ${{ github.repository }} --head ${{ github.ref_name }} --base dev --json number --jq 'length')
@@ -51,7 +68,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.BOT_PAT_TOKEN }}
 
       - name: Create Pull Request
-        if: steps.check-pr.outputs.pr_exists == 'false'
+        if: steps.bot-token.outputs.ok == 'true' && steps.check-pr.outputs.pr_exists == 'false'
         id: open-pr
         uses: peter-evans/create-pull-request@v6
         with:
